@@ -1,11 +1,11 @@
 Changes
 MANIFEST
-Makefile
 Makefile.PL
-Net/Radius/Dictionary.pm
-Net/Radius/Packet.pm
+Radius/Dictionary.pm
+Radius/Packet.pm
 README
 README.VSA
+README.3COM
 README.orig
 dictionary
 examples/example-menu.pl

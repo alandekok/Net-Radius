@@ -1,5 +1,10 @@
 Revision history for Perl extension RADIUS.
 
+1.31    Tue 20 Feb 21:05:00 VET 2001
+	- Fixed test.pl so that make test works
+	- Added mods suggested by Quan Choi regarding the packing
+	of VSAs with 3Com VSAs
+
 1.20	Tue 09 Nov 17:09:00 VET 1999
 	- Added modifications sent by Ian Smith <iansmith@ncinter.net>
 	to the VSA code. This allows VSAs to be sent and understood

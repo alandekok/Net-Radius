@@ -6,7 +6,7 @@ WriteMakefile(
     'VERSION_FROM' => 'version.pl', # finds $VERSION
     'PM' => {
 	     map { ("$_.pm" => "\$(INST_LIBDIR)/$_.pm") }
-	         qw(Net/Radius/Packet Net/Radius/Dictionary)
+	         qw(Radius/Packet Radius/Dictionary)
 	    },
     'dist' => {COMPRESS => 'gzip -9f', SUFFIX => 'gz'}
 );

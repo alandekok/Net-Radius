@@ -7,7 +7,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @EXPORT    = qw(auth_resp);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.3';
+$VERSION = '1.4';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
@@ -105,11 +105,15 @@ sub pack {
     my $hdrlen = 1 + 1 + 2 + 16;    # Size of packet header
     my $p_hdr  = "C C n a16 a*";    # Pack template for header
     my $p_attr = "C C a*";          # Pack template for attribute
-    my $p_vsa  = "C C N C C a*";    # XXX - The spec says that a
+    my $p_vsa  = "C C N C C a*";    
+    # XXX - The spec says that a
     # 'Vendor-Type' must be included
     # but there are no documented definitions
     # for this! We'll simply skip this value
 
+    my $p_vsa_3com  = "C C N N a*";    
+
+    
     my %codes  = ('Access-Request'      => 1,  'Access-Accept'      => 2,
 		  'Access-Reject'       => 3,  'Accounting-Request' => 4,
 		  'Accounting-Response' => 5,  'Access-Challenge'   => 11,
@@ -176,9 +180,21 @@ sub pack {
 					->vsattr_type($vendor, $attr)}}
 		($datum, 
 		 $self->{'Dict'}->vsattr_num($vendor, $attr), $vendor);
-		$attstr .= pack $p_vsa, 26, length($vval) + 8, $vendor,
-		$self->{'Dict'}->vsattr_num($vendor, $attr),
-		length($vval) + 2, $vval;
+		
+		if ($vendor == 429) {
+				# XXX - As pointed out by Quan Choi,
+				# we need special code to handle the
+				# 3Com case
+		    $attstr .= pack $p_vsa_3com, 26, 
+		    length($vval) + 10, $vendor,
+		    $self->{'Dict'}->vsattr_num($vendor, $attr),
+		    $vval;
+		}
+		else {
+		    $attstr .= pack $p_vsa, 26, length($vval) + 8, $vendor,
+		    $self->{'Dict'}->vsattr_num($vendor, $attr),
+		    length($vval) + 2, $vval;
+		}
 	    }
 	}
   }
@@ -531,9 +547,10 @@ a brief description of the procedure:
 
 =head1 AUTHOR
 
-Christopher Masto, <chris@netmonger.net>. VSA support by Luis E. Munoz,
-<lem@cantv.net>. Fix for unpacking 3COM VSAs contributed by Ian Smith
-<iansmith@ncinter.net>
+Christopher Masto, <chris@netmonger.net>. VSA support by Luis
+E. Munoz, <lem@cantv.net>. Fix for unpacking 3COM VSAs contributed by
+Ian Smith <iansmith@ncinter.net>. Information for packing of 3Com VSAs
+provided by Quan Choi <Quan_Choi@3com.com>
 
 =head1 SEE ALSO
 
