@@ -1,4 +1,8 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
 Net::Radius Modules
+===================
 
 The modules included here provide an interface to the RADIUS
 protocol. It consists of the following modules:
@@ -7,11 +11,11 @@ Net::Radius::Packet	- Deals with RADIUS packets
 Net::Radius::Dictionary	- Deals with RADIUS dictionaries
 
 This module is essentially the original RADIUS-1.0 distribution by
-Christopher Masto plus a number of changes and fixes by Luis Munoz and
+Christopher Masto plus a number of changes and fixes by Luis Muñoz and
 Ian Smith.
 
-It has been changed so that it better fixes the CPAN namespace. See
-the other README.* files in this archive for additional information.
+It has been changed so that it better fits the CPAN namespace. See the
+other README.* files in this archive for additional information.
 
 The installation follows the standard protocol...
 
@@ -49,12 +53,54 @@ VENDORVALUE	9	cisco-enum	Value-2	2
 VENDORVALUE	9	cisco-enum	Value-3	3
 
 About the stability, this code has been in very active use at a
-largish ISP with hundreds of thousands of users using a variety of
-network equipment with impressive results. It has been succesfully
-used under FreeBSD, Linux, Solaris and Tru64.
+largish ISP with millions of users using a variety of network
+equipment with impressive results. It has been succesfully used under
+FreeBSD, Linux, Solaris and Tru64.
 
-A sample dictionary file is included, mostly to ilustrate the syntax
-of the expected file.
+There's copious support material along with this distribution. Please
+do take a look.
 
-Enjoy...
+SECURITY CONSIDERATIONS
 
+I have no control on the machanisms involved in the storage or
+transport of this distribution. This means that I cannot guarantee
+that the distribution you have in your hands is indeed, the same
+distribution I packed and uploaded.
+
+Along the distribution file, you should have a file with the extension
+".asc". This contains a GPG "detached signature" that makes it
+impossible for anybody to alter this distribution. If security is of
+any concern to you, by all means verify the signature of this file and
+contact the author if any discrepancy is detected.
+
+You can find more information about this at the following URL
+
+             http://mipagina.cantv.net/lem/gpg/
+
+COPYRIGHT AND LICENSE
+
+Original work (c) Christopher Masto. Changes (c) 2002,2003 Luis
+E. Muñoz <luismunoz@cpan.org>.
+
+This software can be used under the same terms as perl itself. It also
+carries the same warranties.
+
+Please send bug reports (or patches) as well as feedback and
+suggestions to
+
+luismunoz@cpan.org
+
+When submitting bugs, it is very important that you include the
+relevant information for reproducing the bug. Packet dumps are most
+useful.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.0.6 (Darwin)
+Comment: For info see http://www.gnupg.org
+
+iD8DBQE+G53PQyDWGRI/hhARAm5OAKCy4oFliX3Dhe44G8EBn+Bn/+4DIwCgx0Ru
+LM8bysuE6gLGlMPNs1Gk+WY=
+=uKg7
+-----END PGP SIGNATURE-----
+
+$Id: README,v 1.2 2003/01/08 03:42:40 lem Exp $

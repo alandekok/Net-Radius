@@ -7,20 +7,21 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @EXPORT    = qw(auth_resp);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.43';
+$VERSION = '1.44';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
 
 # Be shure our dictionaries are current
 use Net::Radius::Dictionary 1.1;
+use Carp;
 use Socket;
 use Digest::MD5;
 
 my (%unkvprinted,%unkgprinted);
 sub new {
   my ($class, $dict, $data) = @_;
-  my $self = { };
+  my $self = { unknown_entries => 1 };
   bless $self, $class;
   $self->set_dict($dict) if defined($dict);
   $self->unpack($data) if defined($data);
@@ -51,6 +52,8 @@ sub vendors      { keys %{$_[0]->{VSAttributes}};                          }
 sub vsattributes { keys %{$_[0]->{VSAttributes}->{$_[1]}};                 }
 sub vsattr       { $_[0]->{VSAttributes}->{$_[1]}->{$_[2]};                }
 sub set_vsattr   { push @{$_[0]->{VSAttributes}->{$_[1]}->{$_[2]}}, $_[3]; }
+
+sub show_unknown_entries { $_[0]->{unknown_entries} = $_[1]; }
 
 # Decode the password
 sub password {
@@ -140,9 +143,9 @@ sub pack {
   my $p_vsa_3com  = "C C N N a*";    
 
   my %codes  = ('Access-Request'      => 1,  'Access-Accept'      => 2,
-    	  'Access-Reject'       => 3,  'Accounting-Request' => 4,
-    	  'Accounting-Response' => 5,  'Access-Challenge'   => 11,
-    	  'Status-Server'       => 12, 'Status-Client'      => 13);
+		'Access-Reject'       => 3,  'Accounting-Request' => 4,
+		'Accounting-Response' => 5,  'Access-Challenge'   => 11,
+		'Status-Server'       => 12, 'Status-Client'      => 13);
   my $attstr = "";                # To hold attribute structure
   # Define a hash of subroutine references to pack the various data types
   my %packer = ("string" => sub { return $_[0]; },
@@ -178,14 +181,23 @@ sub pack {
     
   # Pack the attributes
   foreach my $attr ($self->attributes) {
-  
-    next unless ref($packer{$self->{Dict}->attr_type($attr)}) eq 'CODE';
 
-    my $val = &{$packer{$self->{Dict}
-        	    ->attr_type($attr)}}($self->attr($attr),
-        				 $self->{Dict} ->attr_num($attr));
-    $attstr .= pack $p_attr, $self->{Dict}->attr_num($attr),
-                  length($val)+2, $val;
+      if (! defined $self->{Dict}->attr_num($attr))
+      {
+	  carp("Unknown RADIUS tuple $attr\n")
+	      if ($self->{unknown_entries});
+	  next;
+      }
+      
+      next unless ref($packer{$self->{Dict}->attr_type($attr)}) eq 'CODE';
+
+      my $val = &{$packer{$self->{Dict}
+			  ->attr_type($attr)}}
+      ($self->attr($attr),
+       $self->{Dict} ->attr_num($attr));
+
+      $attstr .= pack $p_attr, $self->{Dict}->attr_num($attr),
+      length($val)+2, $val;
   }
 
   # Pack the Vendor-Specific Attributes
@@ -410,24 +422,24 @@ parameters in the same packet.
 
 =over 4
 
-=item ->I<set_dict>($dictionary)
+=item -E<gt>I<set_dict>($dictionary)
 
 Net::Radius::Packet needs access to a Net::Radius::Dictionary object to do
 packing and unpacking.  set_dict must be called with an appropriate
 dictionary reference (see L<Net::Radius::Dictionary>) before you can
 use ->B<pack> or ->B<unpack>.
 
-=item ->I<unpack>($data)
+=item -E<gt>I<unpack>($data)
 
 Given a raw RADIUS packet $data, unpacks its contents so that they
 can be retrieved with the other methods (B<code>, B<attr>, etc.).
 
-=item ->I<pack>
+=item -E<gt>I<pack>
 
 Returns a raw RADIUS packet suitable for sending to a RADIUS client
 or server.
 
-=item ->I<code>
+=item -E<gt>I<code>
 
 Returns the Code field as a string.  As of this writing, the following
 codes are defined:
@@ -441,24 +453,24 @@ codes are defined:
 
 Sets the Code field to the string supplied.
 
-=item ->I<identifier>
+=item -E<gt>I<identifier>
 
 Returns the one-byte Identifier used to match requests with responses,
 as a character value.
 
-=item ->I<set_identifier>
+=item -E<gt>I<set_identifier>
 
 Sets the Identifier byte to the character supplied.
 
-=item ->I<authenticator>
+=item -E<gt>I<authenticator>
 
 Returns the 16-byte Authenticator field as a character string.
 
-=item ->I<set_authenticator>
+=item -E<gt>I<set_authenticator>
 
 Sets the Authenticator field to the character string supplied.
 
-=item ->I<attr>($name)
+=item -E<gt>I<attr>($name)
 
 Retrieves the value of the named Attribute.  Attributes will
 be converted automatically based on their dictionary type:
@@ -468,23 +480,23 @@ be converted automatically based on their dictionary type:
         IPADDR     Returned as a string (a.b.c.d)
         TIME       Returned as an integer
 
-=item ->I<set_attr>($name, $val)
+=item -E<gt>I<set_attr>($name, $val)
 
 Sets the named Attribute to the given value.  Values should be supplied
 as they would be returned from the B<attr> method.
 
-=item ->I<unset_attr>($name)
+=item -E<gt>I<unset_attr>($name)
 
 Sets the named Attribute to the given value.  Values should be supplied
 as they would be returned from the B<attr> method.
 
-=item ->I<password>($secret)
+=item -E<gt>I<password>($secret)
 
 The RADIUS User-Password attribute is encoded with a shared secret.
 Use this method to return the decoded version. This also works when
 the attribute name is 'Password' for compatibility reasons.
 
-=item ->I<set_password>($passwd, $secret)
+=item -E<gt>I<set_password>($passwd, $secret)
 
 The RADIUS User-Password attribute is encoded with a shared secret.
 Use this method to prepare the encoded version. Note that this method
@@ -492,9 +504,13 @@ always stores the encrypted password in the 'User-Password'
 attribute. Some servers have been reported on insisting on this
 attribute to be 'Password' instead.
 
-=item ->I<dump>
+=item -E<gt>I<dump>
 
-Prints the packet's contents to STDOUT.
+Prints the content of the packet to STDOUT.
+
+=item -E<gt>I<show_unknown_entries($bool)>
+
+Controls the generation of a C<warn()> whenever an unknown tuple is seen.
 
 =back
 
@@ -590,10 +606,10 @@ a brief description of the procedure:
 =head1 AUTHOR
 
 Christopher Masto, <chris@netmonger.net>. VSA support by Luis
-E. Munoz, <lem@cantv.net>. Fix for unpacking 3COM VSAs contributed by
-Ian Smith <iansmith@ncinter.net>. Information for packing of 3Com VSAs
-provided by Quan Choi <Quan_Choi@3com.com>. Some functions contributed
-by Tony Mountifield <tony@mountifield.org>.
+E. Muñoz, <luismunoz@cpan.org>. Fix for unpacking 3COM VSAs
+contributed by Ian Smith <iansmith@ncinter.net>. Information for
+packing of 3Com VSAs provided by Quan Choi <Quan_Choi@3com.com>. Some
+functions contributed by Tony Mountifield <tony@mountifield.org>.
 
 
 =head1 SEE ALSO

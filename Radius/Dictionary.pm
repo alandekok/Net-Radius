@@ -1,7 +1,10 @@
 package Net::Radius::Dictionary;
 
 use strict;
+use warnings;
 use vars qw($VERSION);
+
+# $Id: Dictionary.pm,v 1.2 2003/01/08 03:42:41 lem Exp $
 
 $VERSION = '1.43';
 
@@ -151,45 +154,45 @@ I<new>
 Returns a new instance of a Net::Radius::Dictionary object.
 If given an (optional) filename, it calls I<readdict> for you.
 
-->I<readdict>
+-E<gt>I<readdict>
 
 Parses a dictionary file and learns the name<->number mappings.
 
-->I<attr_num>($attrname)
+-E<gt>I<attr_num>($attrname)
 
 Returns the number of the named attribute.
 
-->I<attr_type>($attrname)
+-E<gt>I<attr_type>($attrname)
 
 Returns the type (I<string>, I<integer>, I<ipaddr>, or I<time>) of the
 named attribute.
 
-->I<attr_name>($attrnum)
+-E<gt>I<attr_name>($attrnum)
 
 Returns the name of the attribute with the given number.
 
-->I<attr_numtype>($attrnum)
+-E<gt>I<attr_numtype>($attrnum)
 
 Returns the type of the attribute with the given number.
 
-->I<attr_has_val>($attrnum)
+-E<gt>I<attr_has_val>($attrnum)
 
 Returns a true or false value, depending on whether or not the numbered
 attribute has any known value constants.
 
-->I<val_has_name>($attrnum)
+-E<gt>I<val_has_name>($attrnum)
 
 Alternate (bad) name for I<attr_has_val>.
 
-->I<val_num>($attrnum, $valname)
+-E<gt>I<val_num>($attrnum, $valname)
 
 Returns the number of the named value for the attribute number supplied.
 
-->I<val_name>
+-E<gt>I<val_name>
 
 Returns the name of the numbered value for the attribute number supplied.
 
-There's an equivalent family of accessor methods for Vendor-Specific
+There is an equivalent family of accessor methods for Vendor-Specific
 attributes and its values. Those methods are identical to their standard
 attributes counterparts with two exceptions. Their names have a
 I<vsa> prepended to the accessor name and the first argument to each one
@@ -203,7 +206,7 @@ may otherwise cause insanity and/or blindness if studied.
 =head1 AUTHOR
 
 Christopher Masto <chris@netmonger.net>, 
-Luis E. Munoz <lem@cantv.net> contributed the VSA code.
+Luis E. Muñoz <luismunoz@cpan.org> contributed the VSA code.
 
 =head1 SEE ALSO
 

@@ -1,11 +1,12 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl
 
 use Net::Radius::Dictionary;
 use Net::Radius::Packet;
 use Net::Inet;
 use Net::UDP;
-use Fcntl;
+use warnings;
 use strict;
+use Fcntl;
 
 # This is a VERY simple RADIUS authentication server which accepts
 # any user whos User-Name and Password match according to the Unix
@@ -14,6 +15,8 @@ use strict;
 # for a host name.
 
 # NOTE - This server must be run as root on systems with shadow passwords.
+
+# $Id: example-menu.pl,v 1.2 2003/01/08 03:42:41 lem Exp $
 
 my $secret = "mysecret";  # Shared secret on the term server
 

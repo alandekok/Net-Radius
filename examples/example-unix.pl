@@ -1,11 +1,12 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl
 
 use Net::Radius::Dictionary;
 use Net::Radius::Packet;
 use Net::Inet;
 use Net::UDP;
-use Fcntl;
+use warnings;
 use strict;
+use Fcntl;
 
 # This is a VERY simple RADIUS authentication server which accepts
 # any user whos User-Name and Password match according to the Unix

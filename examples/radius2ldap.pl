@@ -1,19 +1,22 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl
 
 use Net::Radius::Dictionary;
 use Net::Radius::Packet;
-use Net::Inet;
-use Net::UDP;
-use Socket;
-use Fcntl;
-use Net::LDAP;
 use Net::LDAP::Util;
+use Net::Inet;
+use Net::LDAP;
+use Net::UDP;
+use warnings;
+use Socket;
 use strict;
+use Fcntl;
 
 # This is a simple RADIUS authentication server which accepts
 # any user whose User-Name and Password validiate via LDAP
 
 # NOTE - This server must be run as root on systems with shadow passwords.
+
+# $Id: radius2ldap.pl,v 1.2 2003/01/08 03:42:41 lem Exp $
 
 my $testing = 0; # set non-zero if testing
 my %hostname_secret = ('rad1' => 'secret1', 'rad2' => '2secret',

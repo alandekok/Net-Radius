@@ -4,7 +4,7 @@
 ## familiar with the RADIUS protocol. If you're not, check the included RFCs
 ## and your equipment's manual.
 ##
-## lem@cantv.net
+## Luis E. Muñoz <luismunoz@cpan.org>
 ##
 ## THIS FILE IS CURRENTLY UNDER REVIEW. PLEASE REFER TO example-*.pl FOR
 ## SPECIFIC USAGE EXAMPLES INVOLVING UP TO DATE METHODS.

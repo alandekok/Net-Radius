@@ -1,17 +1,20 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl
 
+use Time::HiRes qw(gettimeofday tv_interval);
+use Net::Inet qw(:routines);
 use Net::Radius::Dictionary;
 use Net::Radius::Packet;
 use Net::Gen qw(:af);
-use Net::Inet qw(:routines);
-use Net::UDP;
-use Fcntl;
-use Time::HiRes qw(gettimeofday tv_interval);
 use POSIX qw(uname);
+use Net::UDP;
+use warnings;
 use strict;
+use Fcntl;
 
 # This is a simple test program to originate RADIUS authentication
 # and accounting requests for testing a RADIUS server.
+
+# $Id: example-client.pl,v 1.2 2003/01/08 03:42:41 lem Exp $
 
 # test user details
 my $user = "testuser";
