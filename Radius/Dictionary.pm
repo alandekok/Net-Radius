@@ -3,7 +3,7 @@ package Net::Radius::Dictionary;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = '1.41';
+$VERSION = '1.43';
 
 sub new {
   my $class = shift;

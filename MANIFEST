@@ -9,6 +9,7 @@ README.3COM
 README.orig
 dictionary
 dictionary.3com
+examples/example-client.pl
 examples/example-menu.pl
 examples/example-unix.pl
 examples/example-yes.pl

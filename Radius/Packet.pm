@@ -7,7 +7,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @EXPORT    = qw(auth_resp);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.41';
+$VERSION = '1.43';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
@@ -45,6 +45,7 @@ sub set_authenticator { $_[0]->{Authenticator} = $_[1]; }
 sub attributes { keys %{$_[0]->{Attributes}};        }
 sub attr     { $_[0]->{Attributes}->{$_[1]};         }
 sub set_attr { $_[0]->{Attributes}->{$_[1]} = $_[2]; }
+sub unset_attr { delete $_[0]->{Attributes}->{$_[1]}; }
 
 sub vendors      { keys %{$_[0]->{VSAttributes}};                          }
 sub vsattributes { keys %{$_[0]->{VSAttributes}->{$_[1]}};                 }
@@ -55,7 +56,7 @@ sub set_vsattr   { push @{$_[0]->{VSAttributes}->{$_[1]}->{$_[2]}}, $_[3]; }
 sub password {
   my ($self, $secret) = @_;
   my $lastround = $self->authenticator;
-  my $pwdin = $self->attr("Password");
+  my $pwdin = $self->attr("User-Password") || $self->attr("Password");
   my $pwdout = ""; # avoid possible undef warning
   for (my $i = 0; $i < length($pwdin); $i += 16) {
     $pwdout .= substr($pwdin, $i, 16) ^ Digest::MD5::md5($secret . $lastround);
@@ -65,6 +66,21 @@ sub password {
     substr($pwdout,length($pwdin)) = "" 
 	unless length($pwdout) <= length($pwdin);
   return $pwdout;
+}
+
+# Encode the password
+sub set_password {
+  my ($self, $pwdin, $secret) = @_;
+  my $lastround = $self->authenticator;
+  my $pwdout = ""; # avoid possible undef warning
+  $pwdin .= "\000" x (15-(15 + length $pwdin)%16);     # pad to 16n bytes
+
+  for (my $i = 0; $i < length($pwdin); $i += 16) {
+    $lastround = substr($pwdin, $i, 16) 
+      ^ Digest::MD5::md5($secret . $lastround);
+    $pwdout .= $lastround;
+  }
+  $self->set_attr("User-Password" => $pwdout);
 }
 
 # Set response authenticator in binary packet
@@ -348,7 +364,7 @@ Net::Radius::Packet - Object-oriented Perl interface to RADIUS packets
     $resp->set_code('Access-Accept');
     $resp->set_identifier($p->identifier);
     $resp->set_authenticator($p->authenticator);
-    $resp->set_attr('Reply-Message') = "Welcome, Larry!\r\n";
+    $resp->set_attr('Reply-Message' => "Welcome, Larry!\r\n");
     my $respdat = auth_resp($resp->pack, "mysecret");
     ...
 
@@ -457,10 +473,24 @@ be converted automatically based on their dictionary type:
 Sets the named Attribute to the given value.  Values should be supplied
 as they would be returned from the B<attr> method.
 
+=item ->I<unset_attr>($name)
+
+Sets the named Attribute to the given value.  Values should be supplied
+as they would be returned from the B<attr> method.
+
 =item ->I<password>($secret)
 
-The RADIUS Password attribute is encoded with a shared secret.  Use this
-method to return the decoded version.
+The RADIUS User-Password attribute is encoded with a shared secret.
+Use this method to return the decoded version. This also works when
+the attribute name is 'Password' for compatibility reasons.
+
+=item ->I<set_password>($passwd, $secret)
+
+The RADIUS User-Password attribute is encoded with a shared secret.
+Use this method to prepare the encoded version. Note that this method
+always stores the encrypted password in the 'User-Password'
+attribute. Some servers have been reported on insisting on this
+attribute to be 'Password' instead.
 
 =item ->I<dump>
 
@@ -562,7 +592,9 @@ a brief description of the procedure:
 Christopher Masto, <chris@netmonger.net>. VSA support by Luis
 E. Munoz, <lem@cantv.net>. Fix for unpacking 3COM VSAs contributed by
 Ian Smith <iansmith@ncinter.net>. Information for packing of 3Com VSAs
-provided by Quan Choi <Quan_Choi@3com.com>
+provided by Quan Choi <Quan_Choi@3com.com>. Some functions contributed
+by Tony Mountifield <tony@mountifield.org>.
+
 
 =head1 SEE ALSO
 

@@ -6,6 +6,9 @@
 ##
 ## lem@cantv.net
 ##
+## THIS FILE IS CURRENTLY UNDER REVIEW. PLEASE REFER TO example-*.pl FOR
+## SPECIFIC USAGE EXAMPLES INVOLVING UP TO DATE METHODS.
+##
 ###################################
 ###################################
 
@@ -70,13 +73,13 @@ $packet->set_vsattr(9, 'cisco-avpair', 'This is my VSA 2');
 # this particular kind of packet with the help of the user-supplied
 # password, as seen below.
 
-$packet->set_attr('Password',	'My-Password');
+$packet->set_attr('User-Password',	'My-Password');
 
 # However the password must be protected by snooping. We do so using
 # a 'shared-secret'. This is a secret password that is known only to
 # this module and the NAS (as well as your network guys).
 
-$packet->set_attr('Password',	$packet->password('My-Shared-Secret'));
+$packet->set_attr('User-Password',	$packet->password('My-Shared-Secret'));
 
 # Before the actual signing takes place, we must convert the object to
 # an actual packet that can be sent through the network, like in this

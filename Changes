@@ -1,5 +1,15 @@
 Revision history for Perl extension RADIUS.
 
+1.43	Thu Dec 20 15:36:42 GMT 2001
+	Changes by Tony Mountifield <tony@mountifield.org>
+	- added set_password method to generate client password correctly
+	- added unset_attr method to remove an attribute from a Packet
+	- added example-client.pl to demonstrate auth and acct
+	- Added User-Password (as per RFC 2138) both in the code and
+	in the dictionaries [There's some (broken) software that insists
+	in 'Password', so this is used unless 'User-Password' is present -lem]
+	- corrected syntax of the "Welcome, Larry" reply message example.
+
 1.42    Fri Jul  6 12:22:36 VET 2001
 	- Fixed sobe warnings in the packet dump code. (Thanks to Kevin Payne).
 

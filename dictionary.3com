@@ -32,7 +32,7 @@
 # Proper names for everything - use this instead of the above
 #
 ATTRIBUTE	User-Name		1	string
-ATTRIBUTE	Password		2	string
+ATTRIBUTE	User-Password		2	string
 ATTRIBUTE	CHAP-Password		3	string
 ATTRIBUTE	NAS-IP-Address		4	ipaddr
 ATTRIBUTE	NAS-Port		5	integer
