@@ -1,4 +1,5 @@
 use ExtUtils::MakeMaker;
+
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 WriteMakefile(
@@ -8,5 +9,6 @@ WriteMakefile(
 	     map { ("$_.pm" => "\$(INST_LIBDIR)/$_.pm") }
 	         qw(Radius/Packet Radius/Dictionary)
 	    },
+    PREREQ_PM    => {'Digest::MD5'},
     'dist' => {COMPRESS => 'gzip -9f', SUFFIX => 'gz'}
 );

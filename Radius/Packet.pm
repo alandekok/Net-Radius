@@ -7,7 +7,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @EXPORT    = qw(auth_resp);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.4';
+$VERSION = '1.41';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
@@ -15,8 +15,9 @@ $VSA = 26;			# Type assigned in RFC2138 to the
 # Be shure our dictionaries are current
 use Net::Radius::Dictionary 1.1;
 use Socket;
-use MD5;
+use Digest::MD5;
 
+my (%unkvprinted,%unkgprinted);
 sub new {
   my ($class, $dict, $data) = @_;
   my $self = { };
@@ -55,19 +56,21 @@ sub password {
   my ($self, $secret) = @_;
   my $lastround = $self->authenticator;
   my $pwdin = $self->attr("Password");
-  my $pwdout;
+  my $pwdout = ""; # avoid possible undef warning
   for (my $i = 0; $i < length($pwdin); $i += 16) {
-    $pwdout .= substr($pwdin, $i, 16) ^ MD5->hash($secret . $lastround);
+    $pwdout .= substr($pwdin, $i, 16) ^ Digest::MD5::md5($secret . $lastround);
     $lastround = substr($pwdin, $i, 16);
   }
-  $pwdout =~ s/\000*$//;
+  $pwdout =~ s/\000*$// if $pwdout;
+    substr($pwdout,length($pwdin)) = "" 
+	unless length($pwdout) <= length($pwdin);
   return $pwdout;
 }
 
 # Set response authenticator in binary packet
 sub auth_resp {
   my $new = $_[0];
-  substr($new, 4, 16) = MD5->hash($_[0] . $_[1]);
+  substr($new, 4, 16) = Digest::MD5::md5($_[0] . $_[1]);
   return $new;
 }
 
@@ -80,123 +83,123 @@ sub pclean {
 }
 
 sub dump {
+    print str_dump(@_);
+}
+
+sub str_dump {
   my $self = shift;
-  print "*** DUMP OF RADIUS PACKET ($self)\n";
-  print "Code:       ", pdef($self->{Code}), "\n";
-  print "Identifier: ", pdef($self->{Identifier}), "\n";
-  print "Authentic:  ", pclean(pdef($self->{Authenticator})), "\n";
-  print "Attributes:\n";
+  my $ret = '';
+  $ret .= "*** DUMP OF RADIUS PACKET ($self)\n";
+  $ret .= "Code:       ". pdef($self->{Code}). "\n";
+  $ret .= "Identifier: ". pdef($self->{Identifier}). "\n";
+  $ret .= "Authentic:  ". pclean(pdef($self->{Authenticator})). "\n";
+  $ret .= "Attributes:\n";
   foreach my $attr ($self->attributes) {
-    printf "  %-20s %s\n", $attr . ":" , pclean(pdef($self->attr($attr)));
+    $ret .= sprintf("  %-20s %s\n", $attr . ":" , 
+		    pclean(pdef($self->attr($attr))));
   }
   foreach my $vendor ($self->vendors) {
-      print "VSA for vendor ", $vendor, "\n";
-      foreach my $attr ($self->vsattributes($vendor)) {
-	  printf "    %-20s %s\n", $attr . ":" ,
-	  pclean(join("|", @{$self->vsattr($vendor, $attr)}));
-      }
+    $ret .= "VSA for vendor ", $vendor, "\n";
+    foreach my $attr ($self->vsattributes($vendor)) {
+      $ret .= sprintf("    %-20s %s\n", $attr . ":" ,
+		      pclean(join("|", @{$self->vsattr($vendor, $attr)})));
+    }
   }
-  print "*** END DUMP\n";
-
+  $ret .= "*** END DUMP\n";
+  return $ret;
 }
 
 sub pack {
-    my $self = shift;
-    my $hdrlen = 1 + 1 + 2 + 16;    # Size of packet header
-    my $p_hdr  = "C C n a16 a*";    # Pack template for header
-    my $p_attr = "C C a*";          # Pack template for attribute
-    my $p_vsa  = "C C N C C a*";    
-    # XXX - The spec says that a
-    # 'Vendor-Type' must be included
-    # but there are no documented definitions
-    # for this! We'll simply skip this value
+  my $self = shift;
+  my $hdrlen = 1 + 1 + 2 + 16;    # Size of packet header
+  my $p_hdr  = "C C n a16 a*";    # Pack template for header
+  my $p_attr = "C C a*";          # Pack template for attribute
+  my $p_vsa  = "C C N C C a*";    
 
-    my $p_vsa_3com  = "C C N N a*";    
+  # XXX - The spec says that a
+  # 'Vendor-Type' must be included
+  # but there are no documented definitions
+  # for this! We'll simply skip this value
 
+  my $p_vsa_3com  = "C C N N a*";    
+
+  my %codes  = ('Access-Request'      => 1,  'Access-Accept'      => 2,
+    	  'Access-Reject'       => 3,  'Accounting-Request' => 4,
+    	  'Accounting-Response' => 5,  'Access-Challenge'   => 11,
+    	  'Status-Server'       => 12, 'Status-Client'      => 13);
+  my $attstr = "";                # To hold attribute structure
+  # Define a hash of subroutine references to pack the various data types
+  my %packer = ("string" => sub { return $_[0]; },
+    	  "integer" => sub {
+    	      return pack "N", $self->{Dict}->attr_has_val($_[1]) ?
+    		  $self->{Dict}->val_num(@_[1, 0]) : $_[0];
+    	  },
+    	  "ipaddr" => sub {
+    	      return inet_aton($_[0]);
+    	  },
+    	  "time" => sub {
+    	      return pack "N", $_[0];
+    	  },
+    	  "date" => sub {
+    	      return pack "N", $_[0];
+    	  });
+
+  my %vsapacker = ("string" => sub { return $_[0]; },
+    	     "integer" => sub {
+    		 return pack "N", 
+    		 $self->{Dict}->vsattr_has_val($_[2], $_[1]) ?
+    		     $self->{Dict}->vsaval_num(@_[2, 1, 0]) : $_[0];
+    	     },
+    	     "ipaddr" => sub {
+    		 return inet_aton($_[0]);
+             },
+             "time" => sub {
+        	 return pack "N", $_[0];
+             },
+             "date" => sub {
+        	 return pack "N", $_[0];
+             });
     
-    my %codes  = ('Access-Request'      => 1,  'Access-Accept'      => 2,
-		  'Access-Reject'       => 3,  'Accounting-Request' => 4,
-		  'Accounting-Response' => 5,  'Access-Challenge'   => 11,
-		  'Status-Server'       => 12, 'Status-Client'      => 13);
-    my $attstr = "";                # To hold attribute structure
-    # Define a hash of subroutine references to pack the various data types
-    my %packer = ("string" => sub {
-	return $_[0];
-    },
-		  "integer" => sub {
-		      return pack "N", $self->{Dict}->attr_has_val($_[1]) ?
-			  $self->{Dict}->val_num(@_[1, 0]) : $_[0];
-		  },
-		  "ipaddr" => sub {
-		      return inet_aton($_[0]);
-		  },
-		  "time" => sub {
-		      return pack "N", $_[0];
-		  },
-		  "date" => sub {
-		      return pack "N", $_[0];
-		  });
+  # Pack the attributes
+  foreach my $attr ($self->attributes) {
+  
+    next unless ref($packer{$self->{Dict}->attr_type($attr)}) eq 'CODE';
 
-    my %vsapacker = ("string" => sub {
-	return $_[0];
-    },
-		     "integer" => sub {
-			 return pack "N", 
-			 $self->{Dict}->vsattr_has_val($_[2], $_[1]) ?
-			     $self->{Dict}->vsaval_num(@_[2, 1, 0]) : $_[0];
-		     },
-		     "ipaddr" => sub {
-			 return inet_aton($_[0]);
-		     },
-		     "time" => sub {
-			 return pack "N", $_[0];
-		     },
-		     "date" => sub {
-			 return pack "N", $_[0];
-		     });
-    
-    # Pack the attributes
-    foreach my $attr ($self->attributes) {
-	
-	next unless ref($packer{$self->{Dict}->attr_type($attr)}) eq 'CODE';
+    my $val = &{$packer{$self->{Dict}
+        	    ->attr_type($attr)}}($self->attr($attr),
+        				 $self->{Dict} ->attr_num($attr));
+    $attstr .= pack $p_attr, $self->{Dict}->attr_num($attr),
+                  length($val)+2, $val;
+  }
 
-	my $val = &{$packer{$self->{Dict}
-			    ->attr_type($attr)}}($self->attr($attr),
-						 $self->{Dict}
-						 ->attr_num($attr));
-	$attstr .= pack $p_attr, $self
-	    ->{Dict}->attr_num($attr), length($val)+2, $val;
+  # Pack the Vendor-Specific Attributes
+
+  foreach my $vendor ($self->vendors) {
+    foreach my $attr ($self->vsattributes($vendor)) {
+      next unless ref($vsapacker{$self->{Dict}->vsattr_type($vendor, $attr)}) 
+            eq 'CODE';
+      foreach my $datum (@{$self->vsattr($vendor, $attr)}) {
+        my $vval = &{$vsapacker{$self->{'Dict'}
+        			->vsattr_type($vendor, $attr)}}
+        ($datum, $self->{'Dict'}->vsattr_num($vendor, $attr), $vendor);
+        
+        if ($vendor == 429) {
+
+      		# XXX - As pointed out by Quan Choi,
+      		# we need special code to handle the
+      		# 3Com case
+
+          $attstr .= pack $p_vsa_3com, 26, 
+          length($vval) + 10, $vendor,
+          $self->{'Dict'}->vsattr_num($vendor, $attr),
+          $vval;
+        } else {
+          $attstr .= pack $p_vsa, 26, length($vval) + 8, $vendor,
+          $self->{'Dict'}->vsattr_num($vendor, $attr),
+          length($vval) + 2, $vval;
+        }
+      }
     }
-
-    # Pack the Vendor-Specific Attributes
-
-    foreach my $vendor ($self->vendors) {
-	foreach my $attr ($self->vsattributes($vendor)) {
-	    next unless 
-		ref($vsapacker{$self->{Dict}->vsattr_type($vendor, $attr)}) 
-		    eq 'CODE';
-	    foreach my $datum (@{$self->vsattr($vendor, $attr)}) {
-		my $vval = &{$vsapacker{$self->{'Dict'}
-					->vsattr_type($vendor, $attr)}}
-		($datum, 
-		 $self->{'Dict'}->vsattr_num($vendor, $attr), $vendor);
-		
-		if ($vendor == 429) {
-				# XXX - As pointed out by Quan Choi,
-				# we need special code to handle the
-				# 3Com case
-		    $attstr .= pack $p_vsa_3com, 26, 
-		    length($vval) + 10, $vendor,
-		    $self->{'Dict'}->vsattr_num($vendor, $attr),
-		    $vval;
-		}
-		else {
-		    $attstr .= pack $p_vsa, 26, length($vval) + 8, $vendor,
-		    $self->{'Dict'}->vsattr_num($vendor, $attr),
-		    length($vval) + 2, $vval;
-		}
-	    }
-	}
   }
 
   # Prepend the header and return the complete binary packet
@@ -206,25 +209,25 @@ sub pack {
 }
 
 sub unpack {
-    my ($self, $data) = @_;
-    my $dict = $self->{Dict};
-    my $p_hdr  = "C C n a16 a*";    # Pack template for header
-    my $p_attr = "C C a*";          # Pack template for attribute
-    my %rcodes = (1  => 'Access-Request',      2  => 'Access-Accept',
-		  3  => 'Access-Reject',       4  => 'Accounting-Request',
-		  5  => 'Accounting-Response', 11 => 'Access-Challenge',
-		  12 => 'Status-Server',       13 => 'Status-Client');
+  my ($self, $data) = @_;
+  my $dict = $self->{Dict};
+  my $p_hdr  = "C C n a16 a*";    # Pack template for header
+  my $p_attr = "C C a*";          # Pack template for attribute
+  my %rcodes = (1  => 'Access-Request',      2  => 'Access-Accept',
+		3  => 'Access-Reject',       4  => 'Accounting-Request',
+		5  => 'Accounting-Response', 11 => 'Access-Challenge',
+		12 => 'Status-Server',       13 => 'Status-Client');
 
-    # Decode the header
-    my ($code, $id, $len, $auth, $attrdat) = unpack $p_hdr, $data;
+  # Decode the header
+  my ($code, $id, $len, $auth, $attrdat) = unpack $p_hdr, $data;
 
-    # Generate a skeleton data structure to be filled in
-    $self->set_code($rcodes{$code});
-    $self->set_identifier($id);
-    $self->set_authenticator($auth);
+  # Generate a skeleton data structure to be filled in
+  $self->set_code($rcodes{$code});
+  $self->set_identifier($id);
+  $self->set_authenticator($auth);
 
-    # Functions for the various data types
-    my %unpacker = 
+  # Functions for the various data types
+  my %unpacker = 
 	(
 	 "string" => sub {
 	     return $_[0];
@@ -245,7 +248,7 @@ sub unpack {
 	     return unpack "N", $_[0];
 	 });
 
-    my %vsaunpacker = 
+  my %vsaunpacker = 
 	( "string" => sub {
 	    return $_[0];
 	},
@@ -263,54 +266,63 @@ sub unpack {
 	  "date" => sub {
 	      return unpack "N", $_[0];
 	  });
-    
+  
 
-    # Unpack the attributes
-    while (length($attrdat)) {
-	my $length = unpack "x C", $attrdat;
-	my ($type, $value) = unpack "C x a${\($length-2)}", $attrdat;
-	if ($type == $VSA) {	# Vendor-Specific Attribute
-	    my ($vid, $vtype, $vlength) = unpack "N C C", $value;
-	    # XXX - How do we calculate the length
-	    # of the VSA? It's not defined!
-	    # XXX - 3COM seems to do things a bit differently. 
-	    # The IF below takes care of that. This was contributed by 
-	    # Ian Smith. Check the file CHANGES on this distribution for 
-	    # more information.
+  # Unpack the attributes
+  while (length($attrdat)) {
+    my $length = unpack "x C", $attrdat;
+    my ($type, $value) = unpack "C x a${\($length-2)}", $attrdat;
+    if ($type == $VSA) {    # Vendor-Specific Attribute
+      my ($vid, $vtype, $vlength) = unpack "N C C", $value;
 
-            my $vvalue;
-            if ($vid == 429) {
-              ($vid, $vtype) = unpack "N N", $value;
-              $vvalue = unpack "xxxx xxxx a${\($length-10)}", $value;
-            } else {
-              $vvalue = unpack "xxxx x x a${\($vlength-2)}", $value;
-            }
+      # XXX - How do we calculate the length
+      # of the VSA? It's not defined!
 
-	    if (ref $vsaunpacker{$dict->vsattr_numtype($vid, $vtype)} 
-	      ne 'CODE') {
-	      print STDERR 
-		  "Garbled vendor attribute $vid/$vtype for unpack()\n";
-	      substr($attrdat, 0, $length) = ""; # Skip this section
-	      next;
-	  }
-	  my $val = 
-	      &{$vsaunpacker{$dict->vsattr_numtype($vid, $vtype)}}($vvalue, 
-								   $vtype,
-								   $vid);
-	  $self->set_vsattr($vid, 
-			    $dict->vsattr_name($vid, $vtype), 
-			    $val);
+      # XXX - 3COM seems to do things a bit differently. 
+      # The IF below takes care of that. This was contributed by 
+      # Ian Smith. Check the file CHANGES on this distribution for 
+      # more information.
+
+      my $vvalue;
+      if ($vid == 429) {
+        ($vid, $vtype) = unpack "N N", $value;
+        $vvalue = unpack "xxxx xxxx a${\($length-10)}", $value;
+      } else {
+        $vvalue = unpack "xxxx x x a${\($vlength-2)}", $value;
       }
-      else {			# Normal attribute
-	  if (ref ($unpacker{$dict->attr_numtype($type)}) ne 'CODE') {
-	      print STDERR "Garbled attribute $type for unpack()\n";
-	      substr($attrdat, 0, $length) = ""; # Skip this section
-	      next;
-	  }
-	  my $val = &{$unpacker{$dict->attr_numtype($type)}}($value, $type);
-	  $self->set_attr($dict->attr_name($type), $val);
+
+      if ((not defined $dict->vsattr_numtype($vid, $vtype)) or 
+          (ref $vsaunpacker{$dict->vsattr_numtype($vid, $vtype)} ne 'CODE')) {
+        my $whicherr = (defined $dict->vsattr_numtype($vid, $vtype)) ?
+            "Garbled":"Unknown";
+        warn "$whicherr vendor attribute $vid/$vtype for unpack()\n"
+          unless $unkvprinted{"$vid/$vtype"};
+        $unkvprinted{"$vid/$vtype"} = 1;
+        substr($attrdat, 0, $length) = ""; # Skip this section
+        next;
       }
-      substr($attrdat, 0, $length) = ""; # Skip this section
+      my $val = 
+          &{$vsaunpacker{$dict->vsattr_numtype($vid, $vtype)}}($vvalue, 
+                                   $vtype,
+                                   $vid);
+      $self->set_vsattr($vid, 
+                $dict->vsattr_name($vid, $vtype), 
+                $val);
+    } else {            # Normal attribute
+      if ((not defined $dict->attr_numtype($type)) or
+          (ref ($unpacker{$dict->attr_numtype($type)}) ne 'CODE')) {
+        my $whicherr = (defined $dict->attr_numtype($type)) ?
+            "Garbled":"Unknown";
+        warn "$whicherr general attribute $type for unpack()\n"
+          unless $unkgprinted{$type};
+        $unkgprinted{$type} = 1;
+        substr($attrdat, 0, $length) = ""; # Skip this section
+          next;
+      }
+      my $val = &{$unpacker{$dict->attr_numtype($type)}}($value, $type);
+      $self->set_attr($dict->attr_name($type), $val);
+    }
+    substr($attrdat, 0, $length) = ""; # Skip this section
   }
 }
 

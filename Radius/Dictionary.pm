@@ -3,7 +3,7 @@ package Net::Radius::Dictionary;
 use strict;
 use vars qw($VERSION);
 
-$VERSION = '1.4';
+$VERSION = '1.41';
 
 sub new {
   my $class = shift;
@@ -46,6 +46,11 @@ sub readfile {
       }
     }
     elsif (uc($l[0]) eq "VENDORATTR") {
+	if (substr($l[3],0,1) eq "0") { #allow hex or octal
+          my $num = lc($l[3]);
+          $num =~ s/^0b//;
+          $l[3] = oct($num);
+	}   
 	if (not defined $vsattr{$l[1]}->{$l[2]}) {
 	    $vsattr{$l[1]}->{$l[2]} = [@l[3, 4]];
 	}
@@ -54,6 +59,11 @@ sub readfile {
 	}
     }
     elsif (uc($l[0]) eq "VENDORVALUE") {
+	if (substr($l[4],0,1) eq "0") { #allow hex or octal 
+          my $num = lc($l[4]);
+          $num =~ s/^0b//;
+          $l[4] = oct($num);
+	}
 	if (defined $vsattr{$l[1]}->{$l[2]}) {
 	    if (not defined 
 		$vsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[3]})
@@ -71,7 +81,7 @@ sub readfile {
 	else {
 	    warn "Warning: $filename contains vendor value for ",
 	    "unknown vendor attribute - ignored",
-	    "\"$l[1]\"\n";
+	    "\"$l[1]\"\n  $l";
 	}
     }
     else {

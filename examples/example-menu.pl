@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl -w
 
-use RADIUS::Dictionary;
-use RADIUS::Packet;
+use Net::Radius::Dictionary;
+use Net::Radius::Packet;
 use Net::Inet;
 use Net::UDP;
 use Fcntl;
@@ -36,7 +36,7 @@ sub check_pass {
 }
 
 # Parse the RADIUS dictionary file (must have dictionary in current dir)
-my $dict = new RADIUS::Dictionary "dictionary"
+my $dict = new Net::Radius::Dictionary "dictionary"
   or die "Couldn't read dictionary: $!";
 
 # Set up the network socket (must have radius in /etc/services)
@@ -54,10 +54,10 @@ while (1) {
     # Get the data
     $rec = $s->recv(undef, undef, $whence);
     # Unpack it
-    my $p = new RADIUS::Packet $dict, $rec;
+    my $p = new Net::Radius::Packet $dict, $rec;
     if ($p->code eq 'Access-Request') {
       # Initialize the response packet we'll send back
-      my $rp = new RADIUS::Packet $dict;
+      my $rp = new Net::Radius::Packet $dict;
       $rp->set_identifier($p->identifier);
       $rp->set_authenticator($p->authenticator);
       if (not defined($p->attr('State'))) {

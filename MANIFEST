@@ -8,9 +8,12 @@ README.VSA
 README.3COM
 README.orig
 dictionary
+dictionary.3com
 examples/example-menu.pl
 examples/example-unix.pl
 examples/example-yes.pl
+examples/radius2ldap.pl
+examples/tutorial.pl
 rfc2138.txt
 rfc2139.txt
 test.pl

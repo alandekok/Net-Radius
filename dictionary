@@ -206,7 +206,7 @@ VENDORATTR	9	cisco-avpair	1	string
 
 # This is a fake attribute to demonstrate how to write named-value
 # attributes.
-VENDORATTR	1	ibm-enum	254	integer
-VENDORVALUE	1	ibm-enum	value-1	1
-VENDORVALUE	1	ibm-enum	value-2	2
-VENDORVALUE	1	ibm-enum	value-3	3
+#VENDORATTR	1	ibm-enum	254	integer
+#VENDORVALUE	1	ibm-enum	value-1	1
+#VENDORVALUE	1	ibm-enum	value-2	2
+#VENDORVALUE	1	ibm-enum	value-3	3

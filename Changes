@@ -1,5 +1,30 @@
 Revision history for Perl extension RADIUS.
 
+1.41	Fri May 11 10:54:19 EDT 2001
+	Changes by Jim Harle <harle@usna.edu> (Thanks Jim! -lem)
+	- added 3com dictionary
+	- added example radius<->ldap server
+	- fixed examples to show correct module name
+	- made Digest::MD5 a prerequisite in Makefile.PL
+	Dictionary.pm changes
+	- allow hex and octal constants in dictionary file
+	- give more details about unknown vendors
+	Packet.pm changes
+	- use Digest::MD5 instead of MD5 (newer)
+	- distinguishes between garbled and unknown VSAs
+	- individual garbled/unknown VSAs only printed once
+	- make sure empty passwords don't cause undefined if run with -w
+	- cleaned up password length issues when running with Authen::Radius
+	- made indenting in code regular
+	Changes by lem
+	- Minor edits here and there
+	- Errors produced by Net::Radius::Packet are not print'ed but warn'ed 
+	so that they can be catched with $SIG{__WARN__}.
+	- Added examples/tutorial.pl to show how to use some basic
+	functions.
+	- Added ->str_dump to provide the output of a packet dump in
+	 a string.
+	
 1.31    Tue 20 Feb 21:05:00 VET 2001
 	- Fixed test.pl so that make test works
 	- Added mods suggested by Quan Choi regarding the packing
