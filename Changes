@@ -1,5 +1,8 @@
 Revision history for Perl extension RADIUS.
 
+1.42    Fri Jul  6 12:22:36 VET 2001
+	- Fixed sobe warnings in the packet dump code. (Thanks to Kevin Payne).
+
 1.41	Fri May 11 10:54:19 EDT 2001
 	Changes by Jim Harle <harle@usna.edu> (Thanks Jim! -lem)
 	- added 3com dictionary

@@ -99,7 +99,7 @@ sub str_dump {
 		    pclean(pdef($self->attr($attr))));
   }
   foreach my $vendor ($self->vendors) {
-    $ret .= "VSA for vendor ", $vendor, "\n";
+    $ret .= "VSA for vendor $vendor\n";
     foreach my $attr ($self->vsattributes($vendor)) {
       $ret .= sprintf("    %-20s %s\n", $attr . ":" ,
 		      pclean(join("|", @{$self->vsattr($vendor, $attr)})));
