@@ -1,0 +1,17 @@
+Changes
+MANIFEST
+Makefile
+Makefile.PL
+Net/Radius/Dictionary.pm
+Net/Radius/Packet.pm
+README
+README.VSA
+README.orig
+dictionary
+examples/example-menu.pl
+examples/example-unix.pl
+examples/example-yes.pl
+rfc2138.txt
+rfc2139.txt
+test.pl
+version.pl
