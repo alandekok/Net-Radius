@@ -1,0 +1,104 @@
+--- Dictionary.pm~	Tue Jan  7 19:42:41 2003
++++ Dictionary.pm	Fri Jun  9 12:45:41 2006
+@@ -12,14 +12,16 @@
+   my $class = shift;
+   my $self = { };
+   bless $self, $class;
++  $self->{attr} = { }; $self->{rattr} = { };
++  $self->{val}  = { }; $self->{rval}  = { };
++  $self->{vsattr} = { }; $self->{rvsattr} = { };
++  $self->{vsaval}  = { }; $self->{rvsaval}  = { };
+   $self->readfile($_[0]) if defined($_[0]);
+   return $self;
+ }
+
+ sub readfile {
+   my ($self, $filename) = @_;
+-  my (%vsattr, %rvsattr, %vsaval, %rvsaval, 
+-      %attr, %rattr, %val, %rval);
+
+   open DICT, "<$filename";
+
+@@ -27,20 +29,20 @@
+     next if $l =~ /^\#/;
+     next unless my @l = split /\s+/, $l;
+     if (uc($l[0]) eq "ATTRIBUTE") {
+-      if (not defined $attr{$l[1]}) {
+-	$attr{$l[1]}  = [@l[2,3]];
++      if (not defined $self->{attr}->{$l[1]}) {
++	$self->{attr}->{$l[1]}  = [@l[2,3]];
+       }
+-      if (not defined $rattr{$l[2]}) {
+-	$rattr{$l[2]} = [@l[1,3]];
++      if (not defined $self->{rattr}->{$l[2]}) {
++	$self->{rattr}->{$l[2]} = [@l[1,3]];
+       }
+     }
+     elsif (uc($l[0]) eq "VALUE") {
+-      if (defined $attr{$l[1]}) {
+-	if (not defined $val{$attr{$l[1]}->[0]}->{$l[2]}) {
+-	  $val{$attr{$l[1]}->[0]}->{$l[2]}  = $l[3];
++      if (defined $self->{attr}->{$l[1]}) {
++	if (not defined $self->{val}->{$self->{attr}->{$l[1]}->[0]}->{$l[2]}) {
++	  $self->{val}->{$self->{attr}->{$l[1]}->[0]}->{$l[2]}  = $l[3];
+ 	}
+-	if (not defined $rval{$attr{$l[1]}->[0]}->{$l[3]}) {
+-	  $rval{$attr{$l[1]}->[0]}->{$l[3]} = $l[2];
++	if (not defined $self->{rval}->{$self->{attr}->{$l[1]}->[0]}->{$l[3]}) {
++	  $self->{rval}->{$self->{attr}->{$l[1]}->[0]}->{$l[3]} = $l[2];
+ 	}
+       }
+       else {
+@@ -54,11 +56,11 @@
+           $num =~ s/^0b//;
+           $l[3] = oct($num);
+ 	}   
+-	if (not defined $vsattr{$l[1]}->{$l[2]}) {
+-	    $vsattr{$l[1]}->{$l[2]} = [@l[3, 4]];
++	if (not defined $self->{vsattr}->{$l[1]}->{$l[2]}) {
++	    $self->{vsattr}->{$l[1]}->{$l[2]} = [@l[3, 4]];
+ 	}
+-	if (not defined $rvsattr{$l[1]}->{$l[3]}) {
+-	    $rvsattr{$l[1]}->{$l[3]} = [@l[2, 4]];
++	if (not defined $self->{rvsattr}->{$l[1]}->{$l[3]}) {
++	    $self->{rvsattr}->{$l[1]}->{$l[3]} = [@l[2, 4]];
+ 	}
+     }
+     elsif (uc($l[0]) eq "VENDORVALUE") {
+@@ -67,17 +69,17 @@
+           $num =~ s/^0b//;
+           $l[4] = oct($num);
+ 	}
+-	if (defined $vsattr{$l[1]}->{$l[2]}) {
++	if (defined $self->{vsattr}->{$l[1]}->{$l[2]}) {
+ 	    if (not defined 
+-		$vsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[3]})
++		$self->{vsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}->[0]}->{$l[3]})
+ 	    {
+-		$vsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[3]} =
++		$self->{vsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}->[0]}->{$l[3]} =
+ 		    $l[4];
+ 	    }
+ 	    if (not defined 
+-		$rvsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[4]})
++		$self->{rvsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}->[0]}->{$l[4]})
+ 	    {
+-		$rvsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[4]} =
++		$self->{rvsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}->[0]}->{$l[4]} =
+ 		    $l[3];
+ 	    }
+ 	}
+@@ -92,12 +94,6 @@
+     }
+   }
+   close DICT;
+-
+-  $self->{attr} = \%attr; $self->{rattr} = \%rattr;
+-  $self->{val}  = \%val;  $self->{rval}  = \%rval;
+-  $self->{vsattr} = \%vsattr; $self->{rvsattr} = \%rvsattr;
+-  $self->{vsaval}  = \%vsaval;  $self->{rvsaval}  = \%rvsaval;
+-    
+ }
+
+ # Accessors for standard attributes
+

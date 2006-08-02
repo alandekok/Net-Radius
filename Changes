@@ -1,5 +1,21 @@
 Revision history for Perl extension RADIUS.
 
+1.46	Mon Jul 31 17:28:16 VET 2006
+	- Dictionaries now can be merged with each other, as suggested
+	by Kevin Steves
+	- Accessors for dictionary entries now use lc() to match what
+	is done at parse time
+	- Dictionaries are now officially case-insensitive
+	- Various documentation improvements and updates
+	- Added code against bug in Alcatel 5620 SAM Release 3.0
+	(Improper attribute type). Possibly helpful in other cases as
+	well
+
+1.45	Thu Oct 16 10:45:02 VET 2003
+	- Added support for "octets" as requested by Alex Chen
+	- Improved / added tests. This now requires Test::More
+	- Understands the VENDOR syntax for FreeRadius
+
 1.44	Tue Jan  7 23:06:12 VET 2003
 	- By default, tuples not in the dictionary are now ignored.
 	- Added ->show_unknown_entries() to issue warn()s for each unknown

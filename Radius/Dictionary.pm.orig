@@ -4,23 +4,13 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
-# $Id: Dictionary.pm,v 1.5 2006/07/31 21:50:51 lem Exp $
+# $Id: Dictionary.pm,v 1.4 2006/06/09 17:38:50 lem Exp $
 
 $VERSION = '1.45';
 
 sub new {
   my $class = shift;
-  my $self = { 
-      rvsattr	=> {},
-      vsattr	=> {},
-      vsaval	=> {},
-      rvsaval	=> {},
-      attr	=> {},
-      rattr	=> {},
-      val	=> {},
-      rval	=> {},
-      vendors	=> {},
-  };
+  my $self = { };
   bless $self, $class;
   $self->readfile($_[0]) if defined($_[0]);
   return $self;
@@ -28,6 +18,8 @@ sub new {
 
 sub readfile {
   my ($self, $filename) = @_;
+  my (%vsattr, %rvsattr, %vsaval, %rvsaval, 
+      %attr, %rattr, %val, %rval, %vendors);
 
   open DICT, "<$filename";
 
@@ -44,7 +36,7 @@ sub readfile {
 		$num =~ s/^0b//;
 		$l[2] = oct($num);
 	    }   
-	    $self->{vendors}->{$l[1]} = $l[2];
+	    $vendors{$l[1]} = $l[2];
 	}
 	else
 	{
@@ -55,8 +47,14 @@ sub readfile {
     {
 	if (@l == 4)
 	{
-	    $self->{attr}->{$l[1]}  = [@l[2,3]];
-	    $self->{rattr}->{$l[2]} = [@l[1,3]];
+	    if (not defined $attr{$l[1]}) 
+	    {
+		$attr{$l[1]}  = [@l[2,3]];
+	    }
+	    if (not defined $rattr{$l[2]}) 
+	    {
+		$rattr{$l[2]} = [@l[1,3]];
+	    }
 	}
 	elsif (@l == 5)		# VENDORATTR
 	{
@@ -65,12 +63,14 @@ sub readfile {
 		$num =~ s/^0b//;
 		$l[2] = oct($num);
 	    }   
-	    if (exists $self->{vendors}->{$l[4]})
+	    if (exists $vendors{$l[4]})
 	    {
-		$self->{vsattr}->{$self->{vendors}->{$l[4]}}->{$l[1]} 
-		= [@l[2, 3]];
-		$self->{rvsattr}->{$self->{vendors}->{$l[4]}}->{$l[2]} 
-		= [@l[1, 3]];
+		if (not defined $vsattr{$vendors{$l[4]}}->{$l[1]}) {
+		    $vsattr{$vendors{$l[4]}}->{$l[1]} = [@l[2, 3]];
+		}
+		if (not defined $rvsattr{$vendors{$l[4]}}->{$l[3]}) {
+		    $rvsattr{$vendors{$l[4]}}->{$l[2]} = [@l[1, 3]];
+		}
 	    }
 	    else
 	    {
@@ -79,21 +79,29 @@ sub readfile {
 	}
     }
     elsif ($l[0] eq "value") {
-      if (exists $self->{attr}->{$l[1]}) {
-	  $self->{val}->{$self->{attr}->{$l[1]}->[0]}->{$l[2]}  = $l[3];
-	  $self->{rval}->{$self->{attr}->{$l[1]}->[0]}->{$l[3]} = $l[2];
+      if (exists $attr{$l[1]}) {
+	if (not defined $val{$attr{$l[1]}->[0]}->{$l[2]}) {
+	  $val{$attr{$l[1]}->[0]}->{$l[2]}  = $l[3];
+	}
+	if (not defined $rval{$attr{$l[1]}->[0]}->{$l[3]}) {
+	  $rval{$attr{$l[1]}->[0]}->{$l[3]} = $l[2];
+	}
       }
       else {
-	  for my $v (keys %{$self->{vsattr}})
+	  for my $v (keys %vsattr)
 	  {
-	      if (defined $self->{vsattr}->{$v}->{$l[1]})
+	      if (defined $vsattr{$v}->{$l[1]})
 	      {
-		  $self->{vsaval}->{$v}->{$self->{vsattr}->{$v}
-					      ->{$l[1]}->[0]}->{$l[2]} 
-		  = $l[3];
-		  $self->{rvsaval}->{$v}->{$self->{vsattr}->{$v}
-					   ->{$l[1]}->[0]}->{$l[3]} 
-		  = $l[2];
+		  if (not defined $vsaval{$v}->{$vsattr{$v}->{$l[1]}})
+		  {
+		      $vsaval{$v}->{$vsattr{$v}->{$l[1]}->[0]}->{$l[2]} 
+		      = $l[3];
+		  }
+		  if (not defined $rvsaval{$v}->{$vsattr{$v}->{$l[1]}})
+		  {
+		      $rvsaval{$v}->{$vsattr{$v}->{$l[1]}->[0]}->{$l[3]} 
+		      = $l[2];
+		  }
 	      }
 	  }
       }
@@ -104,8 +112,12 @@ sub readfile {
           $num =~ s/^0b//;
           $l[3] = oct($num);
 	}   
-	$self->{vsattr}->{$l[1]}->{$l[2]} = [@l[3, 4]];
-	$self->{rvsattr}->{$l[1]}->{$l[3]} = [@l[2, 4]];
+	if (not defined $vsattr{$l[1]}->{$l[2]}) {
+	    $vsattr{$l[1]}->{$l[2]} = [@l[3, 4]];
+	}
+	if (not defined $rvsattr{$l[1]}->{$l[3]}) {
+	    $rvsattr{$l[1]}->{$l[3]} = [@l[2, 4]];
+	}
     }
     elsif ($l[0] eq "vendorvalue") {
 	if (substr($l[4],0,1) eq "0") 
@@ -114,11 +126,19 @@ sub readfile {
           $num =~ s/^0b//;
           $l[4] = oct($num);
 	}
-	if (defined $self->{vsattr}->{$l[1]}->{$l[2]}) {
-	    $self->{vsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}
-				       ->[0]}->{$l[3]} = $l[4];
-	    $self->{rvsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}
-					->[0]}->{$l[4]} = $l[3];
+	if (defined $vsattr{$l[1]}->{$l[2]}) {
+	    if (not defined 
+		$vsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[3]})
+	    {
+		$vsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[3]} =
+		    $l[4];
+	    }
+	    if (not defined 
+		$rvsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[4]})
+	    {
+		$rvsaval{$l[1]}->{$vsattr{$l[1]}->{$l[2]}->[0]}->{$l[4]} =
+		    $l[3];
+	    }
 	}
 	else {
 	    warn "Warning: $filename contains vendor value for ",
@@ -131,30 +151,35 @@ sub readfile {
     }
   }
   close DICT;
+
+  $self->{attr} = \%attr; $self->{rattr} = \%rattr;
+  $self->{val}  = \%val;  $self->{rval}  = \%rval;
+  $self->{vsattr} = \%vsattr; $self->{rvsattr} = \%rvsattr;
+  $self->{vsaval}  = \%vsaval;  $self->{rvsaval}  = \%rvsaval;
+  $self->{vendors} = \%vendors;
 }
 
 # Accessors for standard attributes
 
-sub vendor_num	 { $_[0]->{vendors}->{lc $_[1]};	}
-sub attr_num     { $_[0]->{attr}->{lc $_[1]}->[0];	}
-sub attr_type    { $_[0]->{attr}->{lc $_[1]}->[1];	}
-sub attr_name    { $_[0]->{rattr}->{$_[1]}->[0];	}
-sub attr_numtype { $_[0]->{rattr}->{$_[1]}->[1];	}
-sub attr_has_val { $_[0]->{val}->{$_[1]};		}
-sub val_has_name { $_[0]->{rval}->{$_[1]};		}
-sub val_num      { $_[0]->{val}->{$_[1]}->{lc $_[2]};	}
-sub val_name     { $_[0]->{rval}->{$_[1]}->{$_[2]};	}
+sub attr_num     { $_[0]->{attr}->{$_[1]}->[0];     }
+sub attr_type    { $_[0]->{attr}->{$_[1]}->[1];     }
+sub attr_name    { $_[0]->{rattr}->{$_[1]}->[0];    }
+sub attr_numtype { $_[0]->{rattr}->{$_[1]}->[1];    }
+sub attr_has_val { $_[0]->{val}->{$_[1]};           }
+sub val_has_name { $_[0]->{rval}->{$_[1]};          }
+sub val_num      { $_[0]->{val}->{$_[1]}->{$_[2]};  }
+sub val_name     { $_[0]->{rval}->{$_[1]}->{$_[2]}; }
 
 # Accessors for Vendor-Specific Attributes
 
-sub vsattr_num      { $_[0]->{vsattr}->{lc $_[1]}->{lc $_[2]}->[0];	}
-sub vsattr_type     { $_[0]->{vsattr}->{lc $_[1]}->{lc $_[2]}->[1];     }
-sub vsattr_name     { $_[0]->{rvsattr}->{lc $_[1]}->{$_[2]}->[0];	}
-sub vsattr_numtype  { $_[0]->{rvsattr}->{lc $_[1]}->{$_[2]}->[1];	}
-sub vsattr_has_val  { $_[0]->{vsaval}->{lc $_[1]}->{$_[2]};		}
-sub vsaval_has_name { $_[0]->{rvsaval}->{lc $_[1]}->{$_[2]};		}
-sub vsaval_num      { $_[0]->{vsaval}->{lc $_[1]}->{$_[2]}->{lc $_[3]};	}
-sub vsaval_name     { $_[0]->{rvsaval}->{lc $_[1]}->{$_[2]}->{$_[3]};	}
+sub vsattr_num      { $_[0]->{vsattr}->{$_[1]}->{$_[2]}->[0];     }
+sub vsattr_type     { $_[0]->{vsattr}->{$_[1]}->{$_[2]}->[1];     }
+sub vsattr_name     { $_[0]->{rvsattr}->{$_[1]}->{$_[2]}->[0];    }
+sub vsattr_numtype  { $_[0]->{rvsattr}->{$_[1]}->{$_[2]}->[1];    }
+sub vsattr_has_val  { $_[0]->{vsaval}->{$_[1]}->{$_[2]};          }
+sub vsaval_has_name { $_[0]->{rvsaval}->{$_[1]}->{$_[2]};         }
+sub vsaval_num      { $_[0]->{vsaval}->{$_[1]}->{$_[2]}->{$_[3]}; }
+sub vsaval_name     { $_[0]->{rvsaval}->{$_[1]}->{$_[2]}->{$_[3]};}
 
 1;
 __END__
@@ -181,67 +206,50 @@ parses it, allowing conversion between dictionary names and numbers.
 Vendor-Specific attributes are supported in a way consistent to the
 standards.
 
-Attributes and in general, all the information in the dictionary files
-is regarded as case B<insensitive>.
-
 =head2 METHODS
 
-=over
+I<new>
 
-=item B<new($dict_file)>
-
-Returns a new instance of a Net::Radius::Dictionary object. This
-object will have no attributes defined, as expected.
-
+Returns a new instance of a Net::Radius::Dictionary object.
 If given an (optional) filename, it calls I<readfile> for you.
 
-=item B<-E<gt>readfile($dict_file)>
+-E<gt>I<readfile>
 
-Parses a dictionary file and learns the mappings to use. It can be
-called multiple times for the same object. The result will be that new
-entries will override older ones, thus you could load a default
-dictionary and then have a smaller dictionary that override specific
-entries.
+Parses a dictionary file and learns the name -E<gt> number mappings.
 
-=item B<-E<gt>vendor_num($vendorname)>
-
-Return the vendor number for the given vendor name.
-
-=item B<-E<gt>attr_num($attrname)>
+-E<gt>I<attr_num>($attrname)
 
 Returns the number of the named attribute.
 
-=item B<-E<gt>attr_type($attrname)>
+-E<gt>I<attr_type>($attrname)
 
 Returns the type (I<string>, I<integer>, I<ipaddr>, or I<time>) of the
 named attribute.
 
-=item B<-E<gt>attr_name($attrnum)>
+-E<gt>I<attr_name>($attrnum)
 
 Returns the name of the attribute with the given number.
 
-=item B<-E<gt>attr_numtype($attrnum)>
+-E<gt>I<attr_numtype>($attrnum)
 
 Returns the type of the attribute with the given number.
 
-=item B<-E<gt>attr_has_val($attrnum)>
+-E<gt>I<attr_has_val>($attrnum)
 
 Returns a true or false value, depending on whether or not the numbered
 attribute has any known value constants.
 
-=item B<-E<gt>val_has_name($attrnum)>
+-E<gt>I<val_has_name>($attrnum)
 
 Alternate (bad) name for I<attr_has_val>.
 
-=item B<-E<gt>val_num($attrnum, $valname)>
+-E<gt>I<val_num>($attrnum, $valname)
 
 Returns the number of the named value for the attribute number supplied.
 
-=item B<-E<gt>val_name($attrnum, $valnumber)>
+-E<gt>I<val_name>
 
 Returns the name of the numbered value for the attribute number supplied.
-
-=back
 
 There is an equivalent family of accessor methods for Vendor-Specific
 attributes and its values. Those methods are identical to their standard

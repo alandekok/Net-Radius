@@ -7,7 +7,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @EXPORT    = qw(auth_resp);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.44';
+$VERSION = '1.45';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
@@ -18,7 +18,8 @@ use Carp;
 use Socket;
 use Digest::MD5;
 
-my (%unkvprinted,%unkgprinted);
+my (%unkvprinted, %unkgprinted);
+
 sub new {
   my ($class, $dict, $data) = @_;
   my $self = { unknown_entries => 1 };
@@ -148,36 +149,40 @@ sub pack {
 		'Status-Server'       => 12, 'Status-Client'      => 13);
   my $attstr = "";                # To hold attribute structure
   # Define a hash of subroutine references to pack the various data types
-  my %packer = ("string" => sub { return $_[0]; },
-    	  "integer" => sub {
-    	      return pack "N", $self->{Dict}->attr_has_val($_[1]) ?
-    		  $self->{Dict}->val_num(@_[1, 0]) : $_[0];
-    	  },
-    	  "ipaddr" => sub {
-    	      return inet_aton($_[0]);
-    	  },
-    	  "time" => sub {
-    	      return pack "N", $_[0];
-    	  },
-    	  "date" => sub {
-    	      return pack "N", $_[0];
-    	  });
+  my %packer = (
+		"octets" => sub { return $_[0]; },
+		"string" => sub { return $_[0]; },
+		"integer" => sub {
+		    return pack "N", $self->{Dict}->attr_has_val($_[1]) ?
+			$self->{Dict}->val_num(@_[1, 0]) : $_[0];
+		},
+		"ipaddr" => sub {
+		    return inet_aton($_[0]);
+		},
+		"time" => sub {
+		    return pack "N", $_[0];
+		},
+		"date" => sub {
+		    return pack "N", $_[0];
+		});
 
-  my %vsapacker = ("string" => sub { return $_[0]; },
-    	     "integer" => sub {
-    		 return pack "N", 
-    		 $self->{Dict}->vsattr_has_val($_[2], $_[1]) ?
-    		     $self->{Dict}->vsaval_num(@_[2, 1, 0]) : $_[0];
-    	     },
-    	     "ipaddr" => sub {
-    		 return inet_aton($_[0]);
-             },
-             "time" => sub {
-        	 return pack "N", $_[0];
-             },
-             "date" => sub {
-        	 return pack "N", $_[0];
-             });
+  my %vsapacker = (
+		   "octets" => sub { return $_[0]; },
+		   "string" => sub { return $_[0]; },
+		   "integer" => sub {
+		       return pack "N", 
+		       $self->{Dict}->vsattr_has_val($_[2], $_[1]) ?
+			   $self->{Dict}->vsaval_num(@_[2, 1, 0]) : $_[0];
+		   },
+		   "ipaddr" => sub {
+		       return inet_aton($_[0]);
+		   },
+		   "time" => sub {
+		       return pack "N", $_[0];
+		   },
+		   "date" => sub {
+		       return pack "N", $_[0];
+		   });
     
   # Pack the attributes
   foreach my $attr ($self->attributes) {
@@ -260,6 +265,9 @@ sub unpack {
 	 "string" => sub {
 	     return $_[0];
 	 },
+	 "octets" => sub {
+	     return $_[0];
+	 },
 	 "integer" => sub {
 	     return $dict->val_has_name($_[1]) ?
 		 $dict->val_name($_[1], 
@@ -267,7 +275,10 @@ sub unpack {
 		     : unpack("N", $_[0]);
 	 },
 	 "ipaddr" => sub {
-	     return inet_ntoa($_[0]);
+	     return length($_[0]) == 4 ? inet_ntoa($_[0]) : $_[0];
+	 },
+	 "address" => sub {
+	     return length($_[0]) == 4 ? inet_ntoa($_[0]) : $_[0];
 	 },
 	 "time" => sub {
 	     return unpack "N", $_[0];
@@ -277,25 +288,32 @@ sub unpack {
 	 });
 
   my %vsaunpacker = 
-	( "string" => sub {
+      ( 
+	"octets" => sub {
 	    return $_[0];
 	},
-	  "integer" => sub {
-		  $dict->vsaval_has_name($_[2], $_[1]) 
-		      ? $dict->vsaval_name($_[2], $_[1], unpack("N", $_[0]))
-			  : unpack("N", $_[0]);
-	  },
-	  "ipaddr" => sub {
-	      return inet_ntoa($_[0]);
-	  },
-	  "time" => sub {
-	      return unpack "N", $_[0];
-	  },
-	  "date" => sub {
-	      return unpack "N", $_[0];
-	  });
+	"string" => sub {
+	    return $_[0];
+	},
+	"integer" => sub {
+	    $dict->vsaval_has_name($_[2], $_[1]) 
+		? $dict->vsaval_name($_[2], $_[1], unpack("N", $_[0]))
+		    : unpack("N", $_[0]);
+	},
+	"ipaddr" => sub {
+	    return length($_[0]) == 4 ? inet_ntoa($_[0]) : $_[0];
+	},
+	"address" => sub {
+	    return length($_[0]) == 4 ? inet_ntoa($_[0]) : $_[0];
+	},
+	"time" => sub {
+	    return unpack "N", $_[0];
+	},
+	"date" => sub {
+	    return unpack "N", $_[0];
+	});
   
-
+  
   # Unpack the attributes
   while (length($attrdat)) {
     my $length = unpack "x C", $attrdat;
@@ -345,7 +363,7 @@ sub unpack {
           unless $unkgprinted{$type};
         $unkgprinted{$type} = 1;
         substr($attrdat, 0, $length) = ""; # Skip this section
-          next;
+	next;
       }
       my $val = &{$unpacker{$dict->attr_numtype($type)}}($value, $type);
       $self->set_attr($dict->attr_name($type), $val);
@@ -395,12 +413,14 @@ example at the end of this document.
 
 =over 4
 
-=item I<new> Net::Radius::Packet $dictionary, $data
+=item B<new Net::Radius::Packet $dictionary, $data>
 
-Returns a new Net::Radius::Packet object.  $dictionary is an optional
-reference to a Net::Radius::Dictionary object.  If not supplied, you must
-call B<set_dict>.  If $data is supplied, B<unpack> will be called for
-you to initialize the object.
+Returns a new Net::Radius::Packet object. C<$dictionary> is an
+optional reference to a Net::Radius::Dictionary object.  If not
+supplied, you must call B<set_dict>.
+
+If C<$data> is supplied, B<unpack> will be called for you to
+initialize the object.
 
 =back
 
@@ -410,11 +430,11 @@ There are actually two families of object methods. The ones described
 below deal with standard RADIUS attributes. An additional set of methods
 handle the Vendor-Specific attributes as defined in the RADIUS protocol.
 Those methods behave in much the same way as the ones below with the
-exception that the prefix I<vs> must be applied before the I<attr> in most
+exception that the prefix B<vs> must be applied before the B<attr> in most
 of the names. The vendor code must also be included as the first parameter
 of the call.
 
-The I<vsattr> and I<set_vsattr> methods, used to query and set
+The B<vsattr> and B<set_vsattr> methods, used to query and set
 Vendor-Specific attributes return an array reference with the values
 of each instance of the particular attribute in the packet. This
 difference is required to support multiple VSAs with different
@@ -422,24 +442,24 @@ parameters in the same packet.
 
 =over 4
 
-=item -E<gt>I<set_dict>($dictionary)
+=item B<-E<gt>set_dict($dictionary)>
 
 Net::Radius::Packet needs access to a Net::Radius::Dictionary object to do
 packing and unpacking.  set_dict must be called with an appropriate
 dictionary reference (see L<Net::Radius::Dictionary>) before you can
 use ->B<pack> or ->B<unpack>.
 
-=item -E<gt>I<unpack>($data)
+=item B<-E<gt>unpack($data)>
 
 Given a raw RADIUS packet $data, unpacks its contents so that they
 can be retrieved with the other methods (B<code>, B<attr>, etc.).
 
-=item -E<gt>I<pack>
+=item B<-E<gt>pack>
 
 Returns a raw RADIUS packet suitable for sending to a RADIUS client
 or server.
 
-=item -E<gt>I<code>
+=item B<-E<gt>code>
 
 Returns the Code field as a string.  As of this writing, the following
 codes are defined:
@@ -449,28 +469,28 @@ codes are defined:
         Accounting-Response     Access-Challenge
         Status-Server           Status-Client
 
-=item -><set_code>($code)
+=item B<-E<gt>set_code($code)>
 
 Sets the Code field to the string supplied.
 
-=item -E<gt>I<identifier>
+=item B<-E<gt>identifier()>
 
 Returns the one-byte Identifier used to match requests with responses,
 as a character value.
 
-=item -E<gt>I<set_identifier>
+=item B<-E<gt>set_identifier($id)>
 
 Sets the Identifier byte to the character supplied.
 
-=item -E<gt>I<authenticator>
+=item B<-E<gt>authenticator()>
 
 Returns the 16-byte Authenticator field as a character string.
 
-=item -E<gt>I<set_authenticator>
+=item B<-E<gt>set_authenticator($authenticator)>
 
 Sets the Authenticator field to the character string supplied.
 
-=item -E<gt>I<attr>($name)
+=item B<-E<gt>attr($name)>
 
 Retrieves the value of the named Attribute.  Attributes will
 be converted automatically based on their dictionary type:
@@ -480,23 +500,23 @@ be converted automatically based on their dictionary type:
         IPADDR     Returned as a string (a.b.c.d)
         TIME       Returned as an integer
 
-=item -E<gt>I<set_attr>($name, $val)
+=item B<-E<gt>set_attr($name, $val)>
 
 Sets the named Attribute to the given value.  Values should be supplied
 as they would be returned from the B<attr> method.
 
-=item -E<gt>I<unset_attr>($name)
+=item B<-E<gt>unset_attr($name)>
 
 Sets the named Attribute to the given value.  Values should be supplied
 as they would be returned from the B<attr> method.
 
-=item -E<gt>I<password>($secret)
+=item B<-E<gt>password($secret)>
 
 The RADIUS User-Password attribute is encoded with a shared secret.
 Use this method to return the decoded version. This also works when
 the attribute name is 'Password' for compatibility reasons.
 
-=item -E<gt>I<set_password>($passwd, $secret)
+=item B<-E<gt>set_password($passwd, $secret)>
 
 The RADIUS User-Password attribute is encoded with a shared secret.
 Use this method to prepare the encoded version. Note that this method
@@ -504,11 +524,11 @@ always stores the encrypted password in the 'User-Password'
 attribute. Some servers have been reported on insisting on this
 attribute to be 'Password' instead.
 
-=item -E<gt>I<dump>
+=item B<-E<gt>dump()>
 
 Prints the content of the packet to STDOUT.
 
-=item -E<gt>I<show_unknown_entries($bool)>
+=item B<-E<gt>show_unknown_entries($bool)>
 
 Controls the generation of a C<warn()> whenever an unknown tuple is seen.
 
@@ -518,7 +538,7 @@ Controls the generation of a C<warn()> whenever an unknown tuple is seen.
 
 =over 4
 
-=item I<auth_resp>($packed_packet, $secret)
+=item B<auth_resp($packed_packet, $secret)>
 
 Given a (packed) RADIUS packet and a shared secret, returns a new
 packet with the Authenticator field changed in accordace with RADIUS
@@ -529,9 +549,8 @@ protocol requirements.
 =head1 NOTES
 
 This document is (not yet) intended to be a complete description of
-how to implement a RADIUS server.  Please see the RFCs (at
-ftp://ftp.livingston.com/pub/radius/) for that.  The following is
-a brief description of the procedure:
+how to implement a RADIUS server. Please see the RFCs for that.  The
+following is a brief description of the procedure:
 
   1. Receive a RADIUS request from the network.
   2. Unpack it using this package.
@@ -606,7 +625,7 @@ a brief description of the procedure:
 =head1 AUTHOR
 
 Christopher Masto, <chris@netmonger.net>. VSA support by Luis
-E. Muñoz, <luismunoz@cpan.org>. Fix for unpacking 3COM VSAs
+E. MuÃ±oz, <luismunoz@cpan.org>. Fix for unpacking 3COM VSAs
 contributed by Ian Smith <iansmith@ncinter.net>. Information for
 packing of 3Com VSAs provided by Quan Choi <Quan_Choi@3com.com>. Some
 functions contributed by Tony Mountifield <tony@mountifield.org>.

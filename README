@@ -1,6 +1,8 @@
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA1
 
+
+
 Net::Radius Modules
 ===================
 
@@ -11,7 +13,7 @@ Net::Radius::Packet	- Deals with RADIUS packets
 Net::Radius::Dictionary	- Deals with RADIUS dictionaries
 
 This module is essentially the original RADIUS-1.0 distribution by
-Christopher Masto plus a number of changes and fixes by Luis Muñoz and
+Christopher Masto plus a number of changes and fixes by Luis MuÃ±oz and
 Ian Smith.
 
 It has been changed so that it better fits the CPAN namespace. See the
@@ -52,6 +54,12 @@ VENDORVALUE	9	cisco-enum	Value-1	1
 VENDORVALUE	9	cisco-enum	Value-2	2
 VENDORVALUE	9	cisco-enum	Value-3	3
 
+Alternatively, you can use the widely deployed FreeRadius dictionary
+files' syntax of:
+
+VENDOR		Cisco		9
+ATTRIBUTE	Cisco-AVPair	1	string		Cisco
+
 About the stability, this code has been in very active use at a
 largish ISP with millions of users using a variety of network
 equipment with impressive results. It has been succesfully used under
@@ -59,6 +67,14 @@ FreeBSD, Linux, Solaris and Tru64.
 
 There's copious support material along with this distribution. Please
 do take a look.
+
+DO YOU WANT TO THANK ME?
+
+If  you consider this  a valuable  contribution, there  is a  web page
+where you can express your gratitude. Please see
+
+	http://mipagina.cantv.net/lem/thanks-en.html (English)
+	http://mipagina.cantv.net/lem/thanks-es.html (Spanish)
 
 SECURITY CONSIDERATIONS
 
@@ -80,7 +96,7 @@ You can find more information about this at the following URL
 COPYRIGHT AND LICENSE
 
 Original work (c) Christopher Masto. Changes (c) 2002,2003 Luis
-E. Muñoz <luismunoz@cpan.org>.
+E. MuÃ±oz <luismunoz@cpan.org>.
 
 This software can be used under the same terms as perl itself. It also
 carries the same warranties.
@@ -95,12 +111,9 @@ relevant information for reproducing the bug. Packet dumps are most
 useful.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.0.6 (Darwin)
-Comment: For info see http://www.gnupg.org
+Version: GnuPG v1.2.1 (Darwin)
 
-iD8DBQE+G53PQyDWGRI/hhARAm5OAKCy4oFliX3Dhe44G8EBn+Bn/+4DIwCgx0Ru
-LM8bysuE6gLGlMPNs1Gk+WY=
-=uKg7
+iD8DBQFEznquQyDWGRI/hhARAq37AJ4nwkdiU1eqgpTObZ0G2QZ0jvQU2QCgkR28
+nf3syw7TJsGGyrr/KSTcyfU=
+=Of85
 -----END PGP SIGNATURE-----
-
-$Id: README,v 1.2 2003/01/08 03:42:40 lem Exp $

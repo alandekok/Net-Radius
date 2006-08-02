@@ -1,11 +1,5 @@
 Changes
-MANIFEST
-Makefile.PL
-Radius/Dictionary.pm
-Radius/Packet.pm
-README
-README.VSA
-README.3COM
+dict.patch
 dictionary
 dictionary.3com
 examples/example-client.pl
@@ -14,7 +8,20 @@ examples/example-unix.pl
 examples/example-yes.pl
 examples/radius2ldap.pl
 examples/tutorial.pl
+Makefile.PL
+MANIFEST			This list of files
+META.yml
+Radius/Dictionary.pm
+Radius/Dictionary.pm.orig
+Radius/Dictionary.pm.rej
+Radius/Packet.pm
+README
+README.3COM
+README.VSA
 rfc2138.txt
 rfc2139.txt
-test.pl
+t/00-load.t
+t/attrdict.t
+t/basedict.t
+t/dictover.t
 version.pl
