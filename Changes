@@ -1,0 +1,87 @@
+Revision history for Perl extension RADIUS.
+
+1.46	Mon Jul 31 17:28:16 VET 2006
+	- Dictionaries now can be merged with each other, as suggested
+	by Kevin Steves
+	- Accessors for dictionary entries now use lc() to match what
+	is done at parse time
+	- Dictionaries are now officially case-insensitive
+	- Various documentation improvements and updates
+	- Added code against bug in Alcatel 5620 SAM Release 3.0
+	(Improper attribute type). Possibly helpful in other cases as
+	well
+
+1.45	Thu Oct 16 10:45:02 VET 2003
+	- Added support for "octets" as requested by Alex Chen
+	- Improved / added tests. This now requires Test::More
+	- Understands the VENDOR syntax for FreeRadius
+
+1.44	Tue Jan  7 23:06:12 VET 2003
+	- By default, tuples not in the dictionary are now ignored.
+	- Added ->show_unknown_entries() to issue warn()s for each unknown
+	  tuple found in the packets.
+
+1.43	Thu Dec 20 15:36:42 GMT 2001
+	Changes by Tony Mountifield <tony@mountifield.org>
+	- added set_password method to generate client password correctly
+	- added unset_attr method to remove an attribute from a Packet
+	- added example-client.pl to demonstrate auth and acct
+	- Added User-Password (as per RFC 2138) both in the code and
+	in the dictionaries [There's some (broken) software that insists
+	in 'Password', so this is used unless 'User-Password' is present -lem]
+	- corrected syntax of the "Welcome, Larry" reply message example.
+
+1.42    Fri Jul  6 12:22:36 VET 2001
+	- Fixed sobe warnings in the packet dump code. (Thanks to Kevin Payne).
+
+1.41	Fri May 11 10:54:19 EDT 2001
+	Changes by Jim Harle <harle@usna.edu> (Thanks Jim! -lem)
+	- added 3com dictionary
+	- added example radius<->ldap server
+	- fixed examples to show correct module name
+	- made Digest::MD5 a prerequisite in Makefile.PL
+	Dictionary.pm changes
+	- allow hex and octal constants in dictionary file
+	- give more details about unknown vendors
+	Packet.pm changes
+	- use Digest::MD5 instead of MD5 (newer)
+	- distinguishes between garbled and unknown VSAs
+	- individual garbled/unknown VSAs only printed once
+	- make sure empty passwords don't cause undefined if run with -w
+	- cleaned up password length issues when running with Authen::Radius
+	- made indenting in code regular
+	Changes by lem
+	- Minor edits here and there
+	- Errors produced by Net::Radius::Packet are not print'ed but warn'ed 
+	so that they can be catched with $SIG{__WARN__}.
+	- Added examples/tutorial.pl to show how to use some basic
+	functions.
+	- Added ->str_dump to provide the output of a packet dump in
+	 a string.
+	
+1.31    Tue 20 Feb 21:05:00 VET 2001
+	- Fixed test.pl so that make test works
+	- Added mods suggested by Quan Choi regarding the packing
+	of VSAs with 3Com VSAs
+
+1.20	Tue 09 Nov 17:09:00 VET 1999
+	- Added modifications sent by Ian Smith <iansmith@ncinter.net>
+	to the VSA code. This allows VSAs to be sent and understood
+	properly by the USR/3COM Total Control family. This has not
+	been individually tested.
+
+1.10	Sat 23 Jan 19:52:00 VET 1999
+	- VSAs now can appear multiple times in a packet. This changes
+	slightly the interface of the VSAs accessors
+
+1.10	Fri 22 Jan 12:31:00 VET 1999
+	- Added 'date' attribute type. This is used by certain 
+	dictionaries
+	- Garbled packets no longer attempt to call an undef
+	code reference in unpack()
+	- Added some suport for Vendor-Specific attributes
+
+1.00  Fri 22 Aug 09:22:16 EDT 1997
+	- first released version
+
+

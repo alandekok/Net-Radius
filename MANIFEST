@@ -1,0 +1,25 @@
+Changes
+dictionary
+dictionary.3com
+examples/example-client.pl
+examples/example-menu.pl
+examples/example-unix.pl
+examples/example-yes.pl
+examples/radius2ldap.pl
+examples/tutorial.pl
+Makefile.PL
+MANIFEST			This list of files
+Radius/Dictionary.pm
+Radius/Packet.pm
+README
+README.3COM
+README.broken
+README.VSA
+rfc2138.txt
+rfc2139.txt
+t/00-load.t
+t/attrdict.t
+t/basedict.t
+t/dictover.t
+version.pl
+META.yml                                 Module meta-data (added by MakeMaker)
