@@ -1,5 +1,13 @@
 Revision history for Perl extension RADIUS.
 
+1.49	Wed Aug  9 11:57:52 VET 2006
+	- Making dictionaries case-insensitive seems to breaks old
+	code in hard to debug ways. This decision was officially
+	reversed
+	- set_password now accepts an optional attribute argmuent, to
+	tell the code where to store the encripted password. Still
+	defaults to 'User-Password'
+
 1.46	Mon Jul 31 17:28:16 VET 2006
 	- Dictionaries now can be merged with each other, as suggested
 	by Kevin Steves

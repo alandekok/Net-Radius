@@ -2,7 +2,7 @@
 
 # Test the overriding of specific entries
 
-# $Id: dictover.t,v 1.1 2006/07/31 21:50:51 lem Exp $
+# $Id: dictover.t,v 1.2 2006/08/09 16:00:01 lem Exp $
 
 use IO::File;
 use Test::More;
@@ -40,30 +40,30 @@ $refs[0] = bless {
 $refs[1] = bless {
     'vsattr' => {
 	'9' => {
-	    'cisco-avpair' => ['1', 'string' ],
+	    'Cisco-AVPair' => ['1', 'string' ],
 	    'cisco-thing' => ['2', 'string' ]
 	    }
     },
     'rattr' => {
-	'1' => ['user-name', 'string'],
-	'23' => ['framed-ipx-network', 'ipaddr'],
-	'10' => ['framed-routing', 'integer']
+	'1' => ['User-Name', 'string'],
+	'23' => ['Framed-IPX-Network', 'ipaddr'],
+	'10' => ['Framed-Routing', 'integer']
 	},
 	    'vendors' => {
-		'cisco' => '9'
+		'Cisco' => '9'
 		},
 		    'rvsaval' => {},
 		    'val' => {},
 		    'rvsattr' => {
 			'9' => {
-			    '1' => ['cisco-avpair', 'string'],
+			    '1' => ['Cisco-AVPair', 'string'],
 			    '2' => ['cisco-thing', 'string']
 			    }
 		    },
     'attr' => {
-	'framed-ipx-network' => ['23', 'ipaddr'],
-	'framed-routing' => ['10', 'integer'],
-	'user-name' => ['1', 'string']
+	'Framed-IPX-Network' => ['23', 'ipaddr'],
+	'Framed-Routing' => ['10', 'integer'],
+	'User-Name' => ['1', 'string']
 	},
 	    'rval' => {},
 	    'vsaval' => {}
@@ -118,19 +118,19 @@ for my $i (0 .. $#dicts)
     is($d->attr_num('User-Name'), 255,
        'Correct number of overriden User-Name');
 
-    is ($d->attr_name(255), 'user-name',
+    is ($d->attr_name(255), 'User-Name',
 	'Correct name for User-Name overriden attribute code');
 
     is($d->attr_type('User-Name'), 'ipaddr',
        'Correct type of overriden User-Name');
 
-    is($d->vendor_num('cisco'), 254,
+    is($d->vendor_num('Cisco'), 254,
        'Correct overriding of vendor code');
 
     is ($d->vsattr_num(254, 'Cisco-AVPair'), 253,
 	'Correct overriding of VSA Attribute name');
 
-    is ($d->vsattr_name(254, 253), 'cisco-avpair',
+    is ($d->vsattr_name(254, 253), 'Cisco-AVPair',
 	'Correct overriding of VSA Attribute number');
 }
 

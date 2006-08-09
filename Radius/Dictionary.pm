@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
-# $Id: Dictionary.pm,v 1.5 2006/07/31 21:50:51 lem Exp $
+# $Id: Dictionary.pm,v 1.6 2006/08/09 16:00:01 lem Exp $
 
 $VERSION = '1.45';
 
@@ -33,9 +33,9 @@ sub readfile {
 
   while (defined(my $l = <DICT>)) {
     next if $l =~ /^\#/;
-    next unless my @l = map { lc } split /\s+/, $l;
+    next unless my @l = split /\s+/, $l;
 
-    if ($l[0] eq "vendor") 
+    if ($l[0] =~ m/^vendor$/i) 
     {
 	if (defined $l[1] and defined $l[2] and $l[2] =~ /^[xo0-9]+$/)
 	{
@@ -51,7 +51,7 @@ sub readfile {
 	    warn "Garbled VENDOR line $l\n";
 	}
     }
-    elsif ($l[0] eq "attribute") 
+    elsif ($l[0] =~ m/^attribute$/i) 
     {
 	if (@l == 4)
 	{
@@ -78,7 +78,7 @@ sub readfile {
 	    }
 	}
     }
-    elsif ($l[0] eq "value") {
+    elsif ($l[0] =~ m/^value$/i) {
       if (exists $self->{attr}->{$l[1]}) {
 	  $self->{val}->{$self->{attr}->{$l[1]}->[0]}->{$l[2]}  = $l[3];
 	  $self->{rval}->{$self->{attr}->{$l[1]}->[0]}->{$l[3]} = $l[2];
@@ -98,7 +98,7 @@ sub readfile {
 	  }
       }
     }
-    elsif ($l[0] eq "vendorattr") {
+    elsif ($l[0] =~ m/^vendorattr$/i) {
 	if (substr($l[3],0,1) eq "0") { #allow hex or octal
           my $num = lc($l[3]);
           $num =~ s/^0b//;
@@ -107,7 +107,7 @@ sub readfile {
 	$self->{vsattr}->{$l[1]}->{$l[2]} = [@l[3, 4]];
 	$self->{rvsattr}->{$l[1]}->{$l[3]} = [@l[2, 4]];
     }
-    elsif ($l[0] eq "vendorvalue") {
+    elsif ($l[0] =~ m/^vendorvalue$/i) {
 	if (substr($l[4],0,1) eq "0") 
 	{ #allow hex or octal 
           my $num = lc($l[4]);
@@ -135,26 +135,26 @@ sub readfile {
 
 # Accessors for standard attributes
 
-sub vendor_num	 { $_[0]->{vendors}->{lc $_[1]};	}
-sub attr_num     { $_[0]->{attr}->{lc $_[1]}->[0];	}
-sub attr_type    { $_[0]->{attr}->{lc $_[1]}->[1];	}
+sub vendor_num	 { $_[0]->{vendors}->{$_[1]};		}
+sub attr_num     { $_[0]->{attr}->{$_[1]}->[0];		}
+sub attr_type    { $_[0]->{attr}->{$_[1]}->[1];		}
 sub attr_name    { $_[0]->{rattr}->{$_[1]}->[0];	}
 sub attr_numtype { $_[0]->{rattr}->{$_[1]}->[1];	}
 sub attr_has_val { $_[0]->{val}->{$_[1]};		}
 sub val_has_name { $_[0]->{rval}->{$_[1]};		}
-sub val_num      { $_[0]->{val}->{$_[1]}->{lc $_[2]};	}
+sub val_num      { $_[0]->{val}->{$_[1]}->{$_[2]};	}
 sub val_name     { $_[0]->{rval}->{$_[1]}->{$_[2]};	}
 
 # Accessors for Vendor-Specific Attributes
 
-sub vsattr_num      { $_[0]->{vsattr}->{lc $_[1]}->{lc $_[2]}->[0];	}
-sub vsattr_type     { $_[0]->{vsattr}->{lc $_[1]}->{lc $_[2]}->[1];     }
-sub vsattr_name     { $_[0]->{rvsattr}->{lc $_[1]}->{$_[2]}->[0];	}
-sub vsattr_numtype  { $_[0]->{rvsattr}->{lc $_[1]}->{$_[2]}->[1];	}
-sub vsattr_has_val  { $_[0]->{vsaval}->{lc $_[1]}->{$_[2]};		}
-sub vsaval_has_name { $_[0]->{rvsaval}->{lc $_[1]}->{$_[2]};		}
-sub vsaval_num      { $_[0]->{vsaval}->{lc $_[1]}->{$_[2]}->{lc $_[3]};	}
-sub vsaval_name     { $_[0]->{rvsaval}->{lc $_[1]}->{$_[2]}->{$_[3]};	}
+sub vsattr_num      { $_[0]->{vsattr}->{$_[1]}->{$_[2]}->[0];		}
+sub vsattr_type     { $_[0]->{vsattr}->{$_[1]}->{$_[2]}->[1];		}
+sub vsattr_name     { $_[0]->{rvsattr}->{$_[1]}->{$_[2]}->[0];		}
+sub vsattr_numtype  { $_[0]->{rvsattr}->{$_[1]}->{$_[2]}->[1];		}
+sub vsattr_has_val  { $_[0]->{vsaval}->{$_[1]}->{$_[2]};		}
+sub vsaval_has_name { $_[0]->{rvsaval}->{$_[1]}->{$_[2]};		}
+sub vsaval_num      { $_[0]->{vsaval}->{$_[1]}->{$_[2]}->{$_[3]};	}
+sub vsaval_name     { $_[0]->{rvsaval}->{$_[1]}->{$_[2]}->{$_[3]};	}
 
 1;
 __END__
@@ -181,8 +181,11 @@ parses it, allowing conversion between dictionary names and numbers.
 Vendor-Specific attributes are supported in a way consistent to the
 standards.
 
-Attributes and in general, all the information in the dictionary files
-is regarded as case B<insensitive>.
+A few earlier versions of this module attempted to make dictionaries
+case-insensitive. This proved to be a very bad decision. From this
+version on, this tendency is reverted: Dictionaries and its contents
+are to be case-sensitive to prevent random, hard to debug failures in
+production code.
 
 =head2 METHODS
 

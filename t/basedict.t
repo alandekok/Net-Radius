@@ -3,7 +3,7 @@
 # Test the simple parsing of the dictionaries enclosed with this
 # distribution
 
-# $Id: basedict.t,v 1.1 2003/10/16 20:10:25 lem Exp $
+# $Id: basedict.t,v 1.2 2006/08/09 16:00:01 lem Exp $
 
 use IO::File;
 #use Data::Dumper;
@@ -62,8 +62,8 @@ VENDORVALUE	9	cisco-funny	baz		3
 EOD
 # FreeRadius vendor syntax
 VENDOR		Cisco			9
-ATTRIBUTE	cisco-avpair		1	string	cisco
-ATTRIBUTE	cisco-funny		2	integer	cisco
+ATTRIBUTE	cisco-avpair		1	string	Cisco
+ATTRIBUTE	cisco-funny		2	integer	Cisco
 VALUE		cisco-funny	foo	1
 VALUE		cisco-funny	bar	2
 VALUE		cisco-funny	baz	3

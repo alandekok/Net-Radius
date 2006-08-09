@@ -2,7 +2,7 @@
 
 # Test the parsing of individual attributes
 
-# $Id: attrdict.t,v 1.1 2003/10/16 20:10:24 lem Exp $
+# $Id: attrdict.t,v 1.2 2006/08/09 16:00:01 lem Exp $
 
 use IO::File;
 use Test::More;
@@ -39,30 +39,30 @@ $refs[0] = bless {
 $refs[1] = bless {
     'vsattr' => {
 	'9' => {
-	    'cisco-avpair' => ['1', 'string' ],
+	    'Cisco-AVPair' => ['1', 'string' ],
 	    'cisco-thing' => ['2', 'string' ]
 	    }
     },
     'rattr' => {
-	'1' => ['user-name', 'string'],
-	'23' => ['framed-ipx-network', 'ipaddr'],
-	'10' => ['framed-routing', 'integer']
+	'1' => ['User-Name', 'string'],
+	'23' => ['Framed-IPX-Network', 'ipaddr'],
+	'10' => ['Framed-Routing', 'integer']
 	},
 	    'vendors' => {
-		'cisco' => '9'
+		'Cisco' => '9'
 		},
 		    'rvsaval' => {},
 		    'val' => {},
 		    'rvsattr' => {
 			'9' => {
-			    '1' => ['cisco-avpair', 'string'],
+			    '1' => ['Cisco-AVPair', 'string'],
 			    '2' => ['cisco-thing', 'string']
 			    }
 		    },
     'attr' => {
-	'framed-ipx-network' => ['23', 'ipaddr'],
-	'framed-routing' => ['10', 'integer'],
-	'user-name' => ['1', 'string']
+	'Framed-IPX-Network' => ['23', 'ipaddr'],
+	'Framed-Routing' => ['10', 'integer'],
+	'User-Name' => ['1', 'string']
 	},
 	    'rval' => {},
 	    'vsaval' => {}

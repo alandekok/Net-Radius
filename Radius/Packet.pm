@@ -36,26 +36,25 @@ sub set_dict {
 }
 
 # Functions for accessing data structures
-sub code          { $_[0]->{Code};          }
-sub identifier    { $_[0]->{Identifier};    }
-sub authenticator { $_[0]->{Authenticator}; }
+sub code          { $_[0]->{Code};          				}
+sub identifier    { $_[0]->{Identifier};    				}
+sub authenticator { $_[0]->{Authenticator}; 				}
 
-sub set_code          { $_[0]->{Code} = $_[1];          }
-sub set_identifier    { $_[0]->{Identifier} = $_[1];    }
-sub set_authenticator { $_[0]->{Authenticator} = $_[1]; }
+sub set_code          { $_[0]->{Code} = $_[1];          		}
+sub set_identifier    { $_[0]->{Identifier} = $_[1];    		}
+sub set_authenticator { $_[0]->{Authenticator} = $_[1]; 		}
 
-sub attributes { keys %{$_[0]->{Attributes}};		}
-sub attr     { $_[0]->{Attributes}->{lc $_[1]};		}
-sub set_attr { $_[0]->{Attributes}->{lc $_[1]} = $_[2];	}
-sub unset_attr { delete $_[0]->{Attributes}->{lc $_[1]} }
+sub attributes { keys %{$_[0]->{Attributes}};				}
+sub attr     { $_[0]->{Attributes}->{$_[1]};				}
+sub set_attr { $_[0]->{Attributes}->{$_[1]} = $_[2];			}
+sub unset_attr { delete $_[0]->{Attributes}->{$_[1]}			}
 
 sub vendors      { keys %{$_[0]->{VSAttributes}};			}
-sub vsattributes { keys %{$_[0]->{VSAttributes}->{lc $_[1]}};           }
-sub vsattr       { $_[0]->{VSAttributes}->{lc $_[1]}->{lc $_[2]};       }
-sub set_vsattr   { push @{$_[0]->{VSAttributes}->{lc $_[1]}->{lc $_[2]}}, 
-		   $_[3]; }
+sub vsattributes { keys %{$_[0]->{VSAttributes}->{$_[1]}};		}
+sub vsattr       { $_[0]->{VSAttributes}->{$_[1]}->{$_[2]};		}
+sub set_vsattr   { push @{$_[0]->{VSAttributes}->{$_[1]}->{$_[2]}},$_[3]}
 
-sub show_unknown_entries { $_[0]->{unknown_entries} = $_[1]; }
+sub show_unknown_entries { $_[0]->{unknown_entries} = $_[1]; 		}
 
 # Decode the password
 sub password {
@@ -75,7 +74,8 @@ sub password {
 
 # Encode the password
 sub set_password {
-  my ($self, $pwdin, $secret) = @_;
+  my ($self, $pwdin, $secret, $attribute) = @_;
+  $attribute ||= 'User-Password';
   my $lastround = $self->authenticator;
   my $pwdout = ""; # avoid possible undef warning
   $pwdin .= "\000" x (15-(15 + length $pwdin)%16);     # pad to 16n bytes
@@ -85,7 +85,7 @@ sub set_password {
       ^ Digest::MD5::md5($secret . $lastround);
     $pwdout .= $lastround;
   }
-  $self->set_attr("User-Password" => $pwdout);
+  $self->set_attr($attribute => $pwdout);
 }
 
 # Set response authenticator in binary packet
@@ -517,13 +517,16 @@ The RADIUS User-Password attribute is encoded with a shared secret.
 Use this method to return the decoded version. This also works when
 the attribute name is 'Password' for compatibility reasons.
 
-=item B<-E<gt>set_password($passwd, $secret)>
+=item B<-E<gt>set_password($passwd, $secret, [$attribute])>
 
 The RADIUS User-Password attribute is encoded with a shared secret.
-Use this method to prepare the encoded version. Note that this method
-always stores the encrypted password in the 'User-Password'
-attribute. Some servers have been reported on insisting on this
-attribute to be 'Password' instead.
+Use this method to prepare the encoded version. The encoded password
+will be stored in the attribute C<$attribute>, which defaults to
+'User-Password'.
+
+Some servers have been reported on insisting on this attribute to be
+'Password' instead. You may have to tweak this call or the dictionary
+accordingly.
 
 =item B<-E<gt>dump()>
 
