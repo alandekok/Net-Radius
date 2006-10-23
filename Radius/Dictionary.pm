@@ -4,9 +4,9 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
-# $Id: Dictionary.pm,v 1.6 2006/08/09 16:00:01 lem Exp $
+# $Id: Dictionary.pm,v 1.7 2006/10/23 20:20:19 lem Exp $
 
-$VERSION = '1.45';
+$VERSION = '1.50';
 
 sub new {
   my $class = shift;
@@ -20,9 +20,11 @@ sub new {
       val	=> {},
       rval	=> {},
       vendors	=> {},
+      packet    => undef,  # Fall back to default
+      rpacket   => undef,  # Fall back to default
   };
   bless $self, $class;
-  $self->readfile($_[0]) if defined($_[0]);
+  $self->readfile($_) for @_; # Read all given dictionaries
   return $self;
 }
 
@@ -126,6 +128,11 @@ sub readfile {
 	    "\"$l[1]\"\n  $l";
 	}
     }
+    elsif (lc($l[0]) eq 'packet') {
+        my ($name, $value) = @l[1,2];
+        $self->{packet}{$name} = $value;
+        $self->{rpacket}{$value} = $name;
+    }
     else {
       warn "Warning: Weird dictionary line: $l\n";
     }
@@ -144,6 +151,7 @@ sub attr_has_val { $_[0]->{val}->{$_[1]};		}
 sub val_has_name { $_[0]->{rval}->{$_[1]};		}
 sub val_num      { $_[0]->{val}->{$_[1]}->{$_[2]};	}
 sub val_name     { $_[0]->{rval}->{$_[1]}->{$_[2]};	}
+sub val_tag      { $_[0]->{val}->{$_[1]}->{$_[3]}; 	}
 
 # Accessors for Vendor-Specific Attributes
 
@@ -153,8 +161,87 @@ sub vsattr_name     { $_[0]->{rvsattr}->{$_[1]}->{$_[2]}->[0];		}
 sub vsattr_numtype  { $_[0]->{rvsattr}->{$_[1]}->{$_[2]}->[1];		}
 sub vsattr_has_val  { $_[0]->{vsaval}->{$_[1]}->{$_[2]};		}
 sub vsaval_has_name { $_[0]->{rvsaval}->{$_[1]}->{$_[2]};		}
+sub vsaval_has_tval { $_[0]->{vsaval}->{$_[1]}->{$_[2]}->[0];		}
+sub vsaval_has_tag  { $_[0]->{vsaval}->{$_[1]}->{$_[2]}->[1];		}
 sub vsaval_num      { $_[0]->{vsaval}->{$_[1]}->{$_[2]}->{$_[3]};	}
 sub vsaval_name     { $_[0]->{rvsaval}->{$_[1]}->{$_[2]}->{$_[3]};	}
+
+# Accessors for packet types. Fall-back to defaults if the case.
+
+# Defaults taken from http://www.iana.org/assignments/radius-types
+# as of Oct 21, 2006
+my %default_packets = (
+    'Access-Request'      => 1, # [RFC2865]
+    'Access-Accept'       => 2, # [RFC2865]
+    'Access-Reject'       => 3, # [RFC2865]
+    'Accounting-Request'  => 4, # [RFC2865]
+    'Accounting-Response' => 5, # [RFC2865]
+    'Accounting-Status'   => 6, # [RFC2882] (now Interim Accounting)
+    'Interim-Accounting'  => 6, # see previous note
+    'Password-Request'    => 7, # [RFC2882]
+    'Password-Ack'        => 8, # [RFC2882]
+    'Password-Reject'     => 9, # [RFC2882]
+    'Accounting-Message'  => 10, # [RFC2882]
+    'Access-Challenge'    => 11, # [RFC2865]
+    'Status-Server'       => 12, # (experimental) [RFC2865]
+    'Status-Client'       => 13, # (experimental) [RFC2865]
+    'Resource-Free-Request'   => 21, # [RFC2882]
+    'Resource-Free-Response'  => 22, # [RFC2882]
+    'Resource-Query-Request'  => 23, # [RFC2882]
+    'Resource-Query-Response' => 24, # [RFC2882]
+    'Alternate-Resource-Reclaim-Request' => 25, # [RFC2882]
+    'NAS-Reboot-Request'  => 26, # [RFC2882]
+    'NAS-Reboot-Response' => 27, # [RFC2882]
+    # 28       Reserved
+    'Next-Passcode'       => 29, # [RFC2882]
+    'New-Pin'             => 30, # [RFC2882]
+    'Terminate-Session'   => 31, # [RFC2882]
+    'Password-Expired'    => 32, # [RFC2882]
+    'Event-Request'       => 33, # [RFC2882]
+    'Event-Response'      => 34, # [RFC2882]
+    'Disconnect-Request'  => 40, # [RFC3575]
+    'Disconnect-ACK'      => 41, # [RFC3575]
+    'Disconnect-NAK'      => 42, # [RFC3575]
+    'CoA-Request'         => 43, # [RFC3575]
+    'CoA-ACK'             => 44, # [RFC3575]
+    'CoA-NAK'             => 45, # [RFC3575]
+    'IP-Address-Allocate' => 50, # [RFC2882]
+    'IP-Address-Release'  => 51, # [RFC2882]
+    # 250-253  Experimental Use
+    # 254      Reserved
+    # 255      Reserved  [RFC2865]
+);
+
+# Reverse defaults. Remember that code #6 has a double mapping, force
+# to Interim-Accouting
+my %default_rpackets 
+    = map { $default_packets{$_} => $_ } keys %default_packets;
+$default_rpackets{6} = 'Interim-Accounting';
+
+# Get full hashes
+sub packet_numbers { %{ $_[0]->{packet}  || \%default_packets  }  }
+sub packet_names   { %{ $_[0]->{rpacket} || \%default_rpackets }; }
+
+# Single resolution, I'm taking care of avoiding auto-vivification
+sub packet_hasname {
+    my $href = $_[0]->{packet} || \%default_packets;
+    my $ok = exists $href->{$_[1]};
+    return $ok unless wantarray;
+    # return both answer and the resolution
+    return ($ok, $ok ? $href->{$_[1]} : undef);
+}
+
+sub packet_hasnum {
+    my $href = $_[0]->{rpacket} || \%default_rpackets;
+    my $ok = exists $href->{$_[1]};
+    return $ok unless wantarray;
+    # return both answer and the resolution
+    return ($ok, $ok ? $href->{$_[1]} : undef);
+}
+
+# Note: crossed, as it might not be immediately evident
+sub packet_num  { ($_[0]->packet_hasname($_[1]))[1]; }
+sub packet_name { ($_[0]->packet_hasnum($_[1]))[1];  }
 
 1;
 __END__
@@ -191,12 +278,13 @@ production code.
 
 =over
 
-=item B<new($dict_file)>
+=item B<new($dict_file, ...)>
 
 Returns a new instance of a Net::Radius::Dictionary object. This
 object will have no attributes defined, as expected.
 
-If given an (optional) filename, it calls I<readfile> for you.
+If given an (optional) list of filenames, it calls I<readfile> for you
+for all of them, in the given order.
 
 =item B<-E<gt>readfile($dict_file)>
 

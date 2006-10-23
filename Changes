@@ -1,5 +1,23 @@
 Revision history for Perl extension RADIUS.
 
+1.50	Mon Oct 23 15:43:20 VET 2006
+	Applied patch by Chris that adds support for tagged
+	attributes.
+	Applied patch from Flavio, adding this:
+	* [Dictionary.pm] accept a new keyword in dictionary file, namely
+	  "PACKET", that allows to define packet types
+	* [Dictionary.pm] these packet types default to the current
+	  state-of-the-art according to 
+	  http://www.iana.org/assignments/radius-types
+	* [Dictionary.pm] the packet types can be accessed via ad-hoc
+          methods
+	* [Dictionary.pm] the constructor has been extended to accept
+	  a list of dictionary files to load upon creation (instead of
+	  a single one)
+	* [Packet.pm] hardcoded mapping hashes in pack() and unpack()
+	  methods are now loaded from the dictionary
+	Bumped version to 1.50 in the .pm files.
+
 1.49	Wed Aug  9 11:57:52 VET 2006
 	- Making dictionaries case-insensitive seems to breaks old
 	code in hard to debug ways. This decision was officially
