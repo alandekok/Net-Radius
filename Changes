@@ -1,5 +1,21 @@
 Revision history for Perl extension RADIUS.
 
+1.51	Mon Nov 13 21:08:28 VET 2006
+	* Improve the ->dump() and ->str_dump() in ::Packet
+	* Add the ->auth_*_verify() methods and tests
+	* Dictionaries can now use the vendor name everywhere
+	* Added all the dictionaries from Ethereal for completeness
+	* Shipped dictionaries were cleaned up. IMPORTANT: Legacy,
+	  obsolete entries have been commented. Please review the
+	  dictionary files or keep the ones currently in production
+	  before installing.
+	* Added pseudo-support for ipv6addr, ifid and date types
+	* Limit the packet authenticator to 16 bytes
+	* Tagged attribue support is broken/incomplete - Need examples
+	  to properly write tests and fill in missing functionality
+	* ->password() now accepts an optional attribute to work with
+	  instead of the default 'User-Password'
+
 1.50	Mon Oct 23 15:43:20 VET 2006
 	Applied patch by Chris that adds support for tagged
 	attributes.

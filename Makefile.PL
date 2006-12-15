@@ -12,6 +12,7 @@ WriteMakefile(
     PREREQ_PM    => {
 	'Digest::MD5' => 0,
 	'Test::More' => 0,
+	'Test::Warn' => 0,
 	},
     'dist' => {COMPRESS => 'gzip -9f', SUFFIX => 'gz'}
 );

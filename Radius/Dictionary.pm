@@ -4,9 +4,9 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
-# $Id: Dictionary.pm,v 1.7 2006/10/23 20:20:19 lem Exp $
+# $Id: Dictionary.pm,v 1.8 2006/11/14 15:26:13 lem Exp $
 
-$VERSION = '1.50';
+$VERSION = '1.51';
 
 sub new {
   my $class = shift;
@@ -74,6 +74,11 @@ sub readfile {
 		$self->{rvsattr}->{$self->{vendors}->{$l[4]}}->{$l[2]} 
 		= [@l[1, 3]];
 	    }
+	    elsif ($l[4] =~ m/^\d+$/)
+	    {
+		$self->{vsattr}->{$l[4]}->{$l[1]}	= [@l[2, 3]];
+		$self->{rvsattr}->{$l[4]}->{$l[2]}	= [@l[1, 3]];
+	    }
 	    else
 	    {
 		warn "Warning: Unknown vendor $l[4]\n";
@@ -106,8 +111,22 @@ sub readfile {
           $num =~ s/^0b//;
           $l[3] = oct($num);
 	}   
-	$self->{vsattr}->{$l[1]}->{$l[2]} = [@l[3, 4]];
-	$self->{rvsattr}->{$l[1]}->{$l[3]} = [@l[2, 4]];
+	if (exists $self->{vendors}->{$l[1]})
+	{
+	    $self->{vsattr}->{$self->{vendors}->{$l[1]}}->{$l[2]} 
+	    = [@l[3, 4]];
+	    $self->{rvsattr}->{$self->{vendors}->{$l[1]}}->{$l[3]} 
+	    = [@l[2, 4]];
+	}
+	elsif ($l[1] =~ m/^\d+$/)
+	{
+	    $self->{vsattr}->{$l[1]}->{$l[2]} = [@l[3, 4]];
+	    $self->{rvsattr}->{$l[1]}->{$l[3]} = [@l[2, 4]];
+	}
+	else
+	{
+	    warn "Warning: Unknown vendor $l[1]\n";
+	}
     }
     elsif ($l[0] =~ m/^vendorvalue$/i) {
 	if (substr($l[4],0,1) eq "0") 
@@ -116,7 +135,17 @@ sub readfile {
           $num =~ s/^0b//;
           $l[4] = oct($num);
 	}
-	if (defined $self->{vsattr}->{$l[1]}->{$l[2]}) {
+	if (exists $self->{vendors}->{$l[1]})
+	{
+	    $self->{vsaval}->{$self->{vendors}->{$l[1]}}
+	    ->{$self->{vsattr}->{$self->{vendors}->{$l[1]}}
+	       ->{$l[2]}->[0]}->{$l[3]} = $l[4];
+	    $self->{rvsaval}->{$self->{vendors}->{$l[1]}}
+	    ->{$self->{vsattr}->{$self->{vendors}->{$l[1]}}
+	       ->{$l[2]}->[0]}->{$l[4]} = $l[3];
+	}
+	elsif ($l[1] =~ m/^\d+$/)
+	{
 	    $self->{vsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}
 				       ->[0]}->{$l[3]} = $l[4];
 	    $self->{rvsaval}->{$l[1]}->{$self->{vsattr}->{$l[1]}->{$l[2]}
@@ -124,7 +153,7 @@ sub readfile {
 	}
 	else {
 	    warn "Warning: $filename contains vendor value for ",
-	    "unknown vendor attribute - ignored",
+	    "unknown vendor attribute - ignored ",
 	    "\"$l[1]\"\n  $l";
 	}
     }

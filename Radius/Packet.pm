@@ -4,16 +4,16 @@ use strict;
 require Exporter;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @ISA       = qw(Exporter);
-@EXPORT    = qw(auth_resp);
+@EXPORT    = qw(auth_resp auth_acct_verify auth_req_verify);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.50';
+$VERSION = '1.51';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
 
 # Be shure our dictionaries are current
-use Net::Radius::Dictionary 1.1;
+use Net::Radius::Dictionary 1.50;
 use Carp;
 use Socket;
 use Digest::MD5;
@@ -42,28 +42,125 @@ sub authenticator { $_[0]->{Authenticator}; 				}
 
 sub set_code          { $_[0]->{Code} = $_[1];          		}
 sub set_identifier    { $_[0]->{Identifier} = $_[1];    		}
-sub set_authenticator { $_[0]->{Authenticator} = $_[1]; 		}
-
-sub attributes { keys %{$_[0]->{Attributes}};				}
-sub attr     { $_[0]->{Attributes}->{$_[1]};				}
-sub set_attr { $_[0]->{Attributes}->{$_[1]} = $_[2];			}
-sub set_taggedattr { $_[0]->{Attributes}->{$_[1]},$_[3] . $_[2];	}
-sub unset_attr { delete $_[0]->{Attributes}->{$_[1]}			}
+sub set_authenticator { $_[0]->{Authenticator} = substr($_[1] 
+							. "\x0" x 16, 
+							0, 16); 	}
 
 sub vendors      { keys %{$_[0]->{VSAttributes}};			}
 sub vsattributes { keys %{$_[0]->{VSAttributes}->{$_[1]}};		}
 sub vsattr       { $_[0]->{VSAttributes}->{$_[1]}->{$_[2]};		}
 sub set_vsattr   { push @{$_[0]->{VSAttributes}->{$_[1]}->{$_[2]}},$_[3]}
-sub set_taggedvsattr  { push @{$_[0]->{VSAttributes}->{$_[1]}->{$_[2]}}
-                        , $_[4] . $_[3]; }
 
 sub show_unknown_entries { $_[0]->{unknown_entries} = $_[1]; 		}
 
+sub set_attr 
+{
+    my ($self, $name, $value, $rewrite_flag) = @_;
+    my ($push, $pos );
+
+    $push = 1 unless $rewrite_flag;
+
+    if ($rewrite_flag) {
+        my $found = 0;
+        my @attr = $self->_attributes;
+
+        for (my $i = 0; $i <= $#attr; $i++ ) {
+            if ($attr[$i][0] eq $name) {
+                $found++;
+                $pos = $i;
+            }
+        }
+
+        if ($found > 1) {
+            $push = 1;
+        } elsif ($found) {
+            $attr[$pos][0] = $name;
+            $attr[$pos][1] = $value;
+            $self->_set_attributes( \@attr );
+            return;
+        } else {
+            $push = 1;
+        }
+    }
+
+    $self->_push_attr( $name, $value ) if $push;
+}
+
+sub attr
+{
+    my ($self, $name ) = @_;
+    
+    my @attr = $self->_attributes;
+    
+    for (my $i = $#attr; $i >= 0; $i-- ) {
+        return $attr[$i][1] if $attr[$i][0] eq $name;
+    }
+    return;
+}
+
+sub attributes {
+    my ($self) = @_;
+    
+    my @attr = $self->_attributes;
+    my @attriblist = ();
+    for (my $i = $#attr; $i >= 0; $i-- ) {
+        push @attriblist, $attr[$i][0];
+    }
+    return @attriblist;
+}
+
+sub unset_attr 
+{
+    my ($self, $name, $value ) = @_;
+    
+    my $found;
+    my @attr = $self->_attributes;
+
+    for (my $i = 0; $i <= $#attr; $i++ ) {
+        if ( $name eq $attr[$i][0] && $value eq pclean(pdef($attr[$i][1]))) {
+            $found = 1;
+	    if ( $#attr == 0 ) {
+		# no more attributes left on the stack
+		$self->_set_attributes( [ ] );
+	    } else {
+		splice @attr, $i, 1;
+		$self->_set_attributes( \@attr );
+	    }
+            return 1;
+        }
+    }
+    return 0;
+}
+
+sub attr_slot       { ($_[0]->_attributes)[ $_[1] ]->[1];      }
+
+sub unset_attr_slot {
+    my ($self, $position ) = @_;
+
+    my @attr = $self->_attributes;
+
+    if ( not $position > $#attr ) {
+        splice @attr, $position, 1;
+        $self->_set_attributes( \@attr );
+        return 1;
+    } else {
+        return;
+    }
+
+}
+
+# 'Attributes' is now array of arrays, so that we can have multiple
+# Proxy-State values in the order in which they were added,
+# as specified in RFC 2865
+sub _attributes     { @{ $_[0]->{Attributes} || [] }; }
+sub _set_attributes { $_[0]->{Attributes} = $_[1]; }
+sub _push_attr      { push @{ $_[0]->{Attributes} }, [ $_[1], $_[2] ]; }
+
 # Decode the password
 sub password {
-  my ($self, $secret) = @_;
+  my ($self, $secret, $attr) = @_;
   my $lastround = $self->authenticator;
-  my $pwdin = $self->attr("User-Password") || $self->attr("Password");
+  my $pwdin = $self->attr($attr || "User-Password");
   my $pwdout = ""; # avoid possible undef warning
   for (my $i = 0; $i < length($pwdin); $i += 16) {
     $pwdout .= substr($pwdin, $i, 16) ^ Digest::MD5::md5($secret . $lastround);
@@ -88,7 +185,7 @@ sub set_password {
       ^ Digest::MD5::md5($secret . $lastround);
     $pwdout .= $lastround;
   }
-  $self->set_attr($attribute => $pwdout);
+  $self->set_attr($attribute => $pwdout, 1);
 }
 
 # Set response authenticator in binary packet
@@ -98,11 +195,24 @@ sub auth_resp {
   return $new;
 }
 
+# Verify the authenticator in a packet
+sub auth_acct_verify { auth_req_verify(@_, "\x0" x 16); }
+sub auth_req_verify
+{
+    my ($packet, $secret, $prauth) = @_;
+
+    return 1 if Digest::MD5::md5(substr($packet, 0, 4) . $prauth 
+				 . substr($packet, 20) . $secret)
+	eq substr($packet, 4, 16);
+    return;
+}
+
 # Utility functions for printing/debugging
 sub pdef { defined $_[0] ? $_[0] : "UNDEF"; }
 sub pclean {
   my $str = $_[0];
-  $str =~ s/([\000-\037\177-\377])/<${\ord($1)}>/g;
+  $str =~ s/([\044-\051\133-\136\140\173-\175])/'\\' . $1/ge;
+  $str =~ s/([\000-\037\177-\377])/sprintf('\x{%x}', ord($1))/ge;
   return $str;
 }
 
@@ -153,6 +263,9 @@ sub pack {
   my %packer = (
 		"octets" => sub { return $_[0]; },
 		"string" => sub { return $_[0]; },
+		"ipv6addr" => sub { return $_[0]; },
+		"date" => sub { return $_[0]; },
+		"ifid" => sub { return $_[0]; },
 		"integer" => sub {
 		    return pack "N",
 		    (
@@ -185,6 +298,9 @@ sub pack {
   my %vsapacker = (
 		   "octets" => sub { return $_[0]; },
 		   "string" => sub { return $_[0]; },
+		   "ipv6addr" => sub { return $_[0]; },
+		   "date" => sub { return $_[0]; },
+		   "ifid" => sub { return $_[0]; },
 		   "integer" => sub {
 		       return pack "N", 
 		       (defined $self->{Dict}->vsattr_has_val($_[2], $_[1])
@@ -242,9 +358,9 @@ sub pack {
         
         if ($vendor == 429) {
 
-      		# XXX - As pointed out by Quan Choi,
+      		# As pointed out by Quan Choi,
       		# we need special code to handle the
-      		# 3Com case
+      		# 3Com case - See RFC-2882, sec 2.3.1
 
 	    $attstr .= pack $p_vsa_3com, 26, 
 	    length($vval) + 10, $vendor,
@@ -289,6 +405,9 @@ sub unpack {
 	 "string" => sub {
 	     return $_[0];
 	 },
+	 "ipv6addr" => sub { return $_[0]; },
+	 "date" => sub { return $_[0]; },
+	 "ifid" => sub { return $_[0]; },
 	 "octets" => sub {
 	     return $_[0];
 	 },
@@ -334,6 +453,9 @@ sub unpack {
 	"string" => sub {
 	    return $_[0];
 	},
+	"ipv6addr" => sub { return $_[0]; },
+	"date" => sub { return $_[0]; },
+	"ifid" => sub { return $_[0]; },
 	"integer" => sub {
 	    my $num=unpack("N", $_[0]);
 	    return ( $dict->vsaval_has_name($_[2], $_[1]) 
@@ -367,8 +489,7 @@ sub unpack {
 	},
 	"tagged-ipaddr" => sub {
 	    my ( $tag, $num ) = unpack "a a*", $_[0];
-	    return inet_ntoa($num) 
-                , $tag;
+	    return inet_ntoa($num), $tag;
 	});
   
   # Unpack the attributes
@@ -473,6 +594,12 @@ Net::Radius::Packet - Object-oriented Perl interface to RADIUS packets
     my $respdat = auth_resp($resp->pack, "mysecret");
     ...
 
+  die "Packet is a fake response\n" if ($p->code eq 'Access-Accept'
+    and not auth_req_verify($data, $secret, $req->authenticator))
+
+  die "Packet is a fake\n" if ($p->code eq 'Accounting-Request'
+    and not auth_acct_verify($data, $secret))
+
 =head1 DESCRIPTION
 
 RADIUS (RFC2138) specifies a binary packet format which contains
@@ -498,6 +625,45 @@ If C<$data> is supplied, B<unpack> will be called for you to
 initialize the object.
 
 =back
+
+=head2 Proxy-State, RFC specification
+
+From RFC-2865:
+
+  2. Operation
+  
+  If any Proxy-State attributes were present in the Access-Request,
+  they MUST be copied unmodified and in order into the response packet.
+  Other Attributes can be placed before, after, or even between the
+  Proxy-State attributes.
+  
+  2.3 Proxy
+  
+  The forwarding server MUST treat any Proxy-State attributes already
+  in the packet as opaque data.  Its operation MUST NOT depend on the
+  content of Proxy-State attributes added by previous servers.
+  
+  If there are any Proxy-State attributes in the request received from
+  the client, the forwarding server MUST include those Proxy-State
+  attributes in its reply to the client.  The forwarding server MAY
+  include the Proxy-State attributes in the access-request when it
+  forwards the request, or MAY omit them in the forwarded request.  If
+  the forwarding server omits the Proxy-State attributes in the
+  forwarded access-request, it MUST attach them to the response before
+  sending it to the client.
+
+=head2 Proxy-State, Implementation
+
+Proxy-State attributes are stored in an array, and when copied from
+one Net::Radius::PacketOrdered to another - using method
+C<-E<gt>new()> with packet data as attribute - they retain their
+order.
+
+C<-E<gt>attr()> method always return the last attribute inserted.
+
+C<-E<gt>set_attr()> method pushes the attribute onto the Attributes
+stack, or overwrites it in specific circumnstances, as described in
+method documentation.
 
 =head2 OBJECT METHODS
 
@@ -575,21 +741,59 @@ be converted automatically based on their dictionary type:
         IPADDR     Returned as a string (a.b.c.d)
         TIME       Returned as an integer
 
-=item B<-E<gt>set_attr($name, $val)>
+The following types are simply mapped to other types until correct
+encoding is implemented:
 
-Sets the named Attribute to the given value.  Values should be supplied
-as they would be returned from the B<attr> method.
+=over
+
+=item B<ipv6addr>
+
+Treated as a string
+
+=item B<date>
+
+Treated as a string
+
+=item B<ifid>
+
+Treated as a string
+
+=back
+
+When multiple attributes are inserted in the packet, the last one is
+returned.
+
+=item B<-E<gt>I<set_attr>($name, $val, $rewrite_flag)>
+
+Sets the named Attributes to the given value. Values should be
+supplied as they would be returned from the B<attr> method. If
+rewrite_flag is set, and a single attribute with such name already
+exists on the Attributes stack, its value will be overwriten with the
+supplied one. In all other cases (if there are more than one
+attributes with such name already on the stack, there are no
+attributes with such name, rewrite_flag is omitted) name/pair array
+will be pushed onto the stack.
 
 =item B<-E<gt>unset_attr($name)>
 
 Sets the named Attribute to the given value.  Values should be supplied
 as they would be returned from the B<attr> method.
 
-=item B<-E<gt>password($secret)>
+=item B<-E<gt>I<attr_slot>($integer)>
+
+Retrieves the attribute value of the given slot number from the
+Attributes stack.
+
+=item B<-E<gt>I<unset_attr_slot>($integer)>
+
+Removes given stack position from the Attributes stack.
+
+=item B<-E<gt>password($secret, [$attr])>
 
 The RADIUS User-Password attribute is encoded with a shared secret.
-Use this method to return the decoded version. This also works when
-the attribute name is 'Password' for compatibility reasons.
+Use this method to return the decoded version. By default, the
+password will be looked for in the User-Password attribute. You can
+specify an alternate RADIUS attribute, by using the second argument.
 
 =item B<-E<gt>set_password($passwd, $secret, [$attribute])>
 
@@ -622,83 +826,35 @@ Given a (packed) RADIUS packet and a shared secret, returns a new
 packet with the Authenticator field changed in accordace with RADIUS
 protocol requirements.
 
+=item B<auth_acct_verify($packet, $secret)>
+
+Verifies the authenticator in an B<Accounting-Request> packet as
+explained in RFC-2866. Returns 1 if the authenticator matches the
+packet and the secret, undef otherwise.
+
+C<$packet> is the packet data, as received. C<$secret> is the
+corresponding shared secret.
+
+=item B<auth_req_verify($packet, $secret, $prev_auth)>
+
+Verifies the authenticator in B<Access-Accept>, B<Access-Reject>, and
+B<Access-Challenge> packets as explained in RFC-2865. Returns 1 if the
+authenticator matches the packet and the secret, undef otherwise.
+
+C<$packet> is the packet data, as received. C<$secret> is the
+corresponding shared secret. C<$prev_auth> is the authenticator taken
+from the corresponding B<Access-Accept> packet.
+
+It's the application's job to keep track of the authenticators in each
+request.
+
 =back
-
-=head1 NOTES
-
-This document is (not yet) intended to be a complete description of
-how to implement a RADIUS server. Please see the RFCs for that.  The
-following is a brief description of the procedure:
-
-  1. Receive a RADIUS request from the network.
-  2. Unpack it using this package.
-  3. Examine the attributes to determine the appropriate response.
-  4. Construct a response packet using this package.
-     Copy the Identifier and Authenticator fields from the request,
-     set the Code as appropriate, and fill in whatever Attributes
-     you wish to convey in to the server.
-  5. Call the pack method and use the auth_resp function to
-     authenticate it with your shared secret.
-  6. Send the response back over the network.
-  7. Lather, rinse, repeat.
 
 =head1 EXAMPLE
 
-    #!/usr/local/bin/perl -w
-
-    use Net::Radius::Dictionary;
-    use Net::Radius::Packet;
-    use Net::Inet;
-    use Net::UDP;
-    use Fcntl;
-    use strict;
-
-    # This is a VERY simple RADIUS authentication server which responds
-    # to Access-Request packets with Access-Accept.  This allows anyone
-    # to log in.
-
-    my $secret = "mysecret";  # Shared secret on the term server
-
-    # Parse the RADIUS dictionary file (must have dictionary in current dir)
-    my $dict = new Net::Radius::Dictionary "dictionary"
-      or die "Couldn't read dictionary: $!";
-
-    # Set up the network socket (must have radius in /etc/services)
-    my $s = new Net::UDP { thisservice => "radius" } or die $!;
-    $s->bind or die "Couldn't bind: $!";
-    $s->fcntl(F_SETFL, $s->fcntl(F_GETFL,0) | O_NONBLOCK)
-      or die "Couldn't make socket non-blocking: $!";
-
-    # Loop forever, recieving packets and replying to them
-    while (1) {
-      my ($rec, $whence);
-      # Wait for a packet
-      my $nfound = $s->select(1, 0, 1, undef);
-      if ($nfound > 0) {
-	# Get the data
-	$rec = $s->recv(undef, undef, $whence);
-	# Unpack it
-	my $p = new Net::Radius::Packet $dict, $rec;
-	if ($p->code eq 'Access-Request') {
-	  # Print some details about the incoming request (try ->dump here)
-	  print $p->attr('User-Name'), " logging in with password ",
-		$p->password($secret), "\n";
-	  # Create a response packet
-	  my $rp = new Net::Radius::Packet $dict;
-	  $rp->set_code('Access-Accept');
-	  $rp->set_identifier($p->identifier);
-	  $rp->set_authenticator($p->authenticator);
-	  # (No attributes are needed.. but you could set IP addr, etc. here)
-	  # Authenticate with the secret and send to the server.
-	  $s->sendto(auth_resp($rp->pack, $secret), $whence);
-	}
-	else {
-	  # It's not an Access-Request
-	  print "Unexpected packet type recieved.";
-	  $p->dump;
-	}
-      }
-    }
+See the examples included in the B<examples/> directory of the
+distribution. Also see Net::Radius::Server(3) for a more complete
+implementation of a RADIUS server.
 
 =head1 AUTHOR
 
@@ -706,11 +862,13 @@ Christopher Masto, <chris@netmonger.net>. VSA support by Luis
 E. Muñoz, <luismunoz@cpan.org>. Fix for unpacking 3COM VSAs
 contributed by Ian Smith <iansmith@ncinter.net>. Information for
 packing of 3Com VSAs provided by Quan Choi <Quan_Choi@3com.com>. Some
-functions contributed by Tony Mountifield <tony@mountifield.org>.
-
+functions contributed by Tony Mountifield
+<tony@mountifield.org>. Attribute ordering provided by Toni Prug,
+<toni@irational.org>, idea by Bill Hulley.
 
 =head1 SEE ALSO
 
-Net::Radius::Dictionary
+Perl, Net::Radius::Server(3), Net::Radius::Dictionary(3), RFCs 2865,
+2866, 2882 and 3575.
 
 =cut
