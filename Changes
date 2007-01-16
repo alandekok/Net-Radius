@@ -1,5 +1,29 @@
 Revision history for Perl extension RADIUS.
 
+1.52    Mon Jan  8 15:47:38 VET 2007
+	* Added patch by Freman (consistend ->set_vsattr and
+	  ->unset_vsattr) - Thanks Freman
+	* ->attr_slot deprecated. ->attr_slot_name and ->attr_slot_val
+	  introduced
+	* Added documentation for those methods
+	* Added tests to verify correct operation of the overwrite and
+	  slots functionality
+	* Multiple attributes (ie, multiple Proxy-State attributes)
+	  are now correctly handled
+	* Include (untested) patch from j7 (Thanks) which allows for
+	  multiple VSAs. We need some testing for this...
+
+	Tue Jan  9 15:52:06 VET 2007
+	* Added support for the packet decoding tests as well as
+	  samples of common packets in a live production environment
+	* dictionary.base now replaces dictionary.orig
+
+	Sun Jan 14 14:54:25 VET 2007
+	* Added BroadSoft VSA dictionary supplied by j7 - Fixed typo
+	within it
+	* Extracted binary packet from the sample provided by j7 and
+	added standard packet decoding test	
+
 1.51	Mon Nov 13 21:08:28 VET 2006
 	* Improve the ->dump() and ->str_dump() in ::Packet
 	* Add the ->auth_*_verify() methods and tests

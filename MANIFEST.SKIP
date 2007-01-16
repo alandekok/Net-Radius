@@ -1,3 +1,4 @@
+^\.\.?
 ^Build$
 ^_build/
 ^blib/
@@ -23,4 +24,7 @@ CVS/.*
 \.zip$
 dict\.\d+$
 _uu$
+\.orig$
+\.rej$
+\.rej\.\d+$
 

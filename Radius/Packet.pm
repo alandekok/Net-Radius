@@ -12,7 +12,7 @@ $VERSION = '1.51';
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
 
-# Be shure our dictionaries are current
+# Be sure our dictionaries are current
 use Net::Radius::Dictionary 1.50;
 use Carp;
 use Socket;
@@ -49,7 +49,32 @@ sub set_authenticator { $_[0]->{Authenticator} = substr($_[1]
 sub vendors      { keys %{$_[0]->{VSAttributes}};			}
 sub vsattributes { keys %{$_[0]->{VSAttributes}->{$_[1]}};		}
 sub vsattr       { $_[0]->{VSAttributes}->{$_[1]}->{$_[2]};		}
-sub set_vsattr   { push @{$_[0]->{VSAttributes}->{$_[1]}->{$_[2]}},$_[3]}
+sub set_vsattr   { 
+    my ($self, $vendor, $name, $value, $rewrite_flag) = @_;
+    $self->{VSAttributes}->{$vendor} = {} unless exists($self->{VSAttributes}->{$vendor});
+    my $attr = $self->{VSAttributes}->{$vendor};
+
+    if ($rewrite_flag) {
+	my $found = 0;
+
+	if (exists($attr->{$name})) {
+	    $found = $#{$attr->{$name}} + 1;
+        }
+
+	if ($found == 1) {
+	    $attr->{$name}[0] = $value;
+	    return;
+	}    
+    }
+
+    push @{$attr->{$name}}, $value;
+}
+
+sub unset_vsattr {
+    my ($self, $vendor, $name) = @_;
+
+    delete($self->{VSAttributes}->{$name});
+}
 
 sub show_unknown_entries { $_[0]->{unknown_entries} = $_[1]; 		}
 
@@ -132,7 +157,32 @@ sub unset_attr
     return 0;
 }
 
-sub attr_slot       { ($_[0]->_attributes)[ $_[1] ]->[1];      }
+# XXX - attr_slot is deprecated - Use attr_slot_* instead
+sub attr_slot		{ attr_slot_val($@); }
+
+sub attr_slots { scalar ($_[0]->_attributes); }
+
+sub attr_slot_name
+{ 
+    my $self = shift;
+    my $slot = shift;
+    my @stack = $self->_attributes;
+
+    return unless exists $stack[$slot];
+    return unless exists $stack[$slot]->[0];
+    $stack[$slot]->[0];
+}
+
+sub attr_slot_val
+{ 
+    my $self = shift;
+    my $slot = shift;
+    my @stack = $self->_attributes;
+
+    return unless exists $stack[$slot];
+    return unless exists $stack[$slot]->[0];
+    $stack[$slot]->[1];
+}
 
 sub unset_attr_slot {
     my ($self, $position ) = @_;
@@ -228,10 +278,13 @@ sub str_dump {
   $ret .= "Identifier: ". pdef($self->{Identifier}). "\n";
   $ret .= "Authentic:  ". pclean(pdef($self->{Authenticator})). "\n";
   $ret .= "Attributes:\n";
-  foreach my $attr ($self->attributes) {
-    $ret .= sprintf("  %-20s %s\n", $attr . ":" , 
-		    pclean(pdef($self->attr($attr))));
+
+  for (my $i = 0; $i < $self->attr_slots; ++$i)
+  {
+      $ret .= sprintf("  %-20s %s\n", $self->attr_slot_name($i) . ":" , 
+		    pclean(pdef($self->attr_slot_val($i))));
   }
+
   foreach my $vendor ($self->vendors) {
     $ret .= "VSA for vendor $vendor\n";
     foreach my $attr ($self->vsattributes($vendor)) {
@@ -328,11 +381,13 @@ sub pack {
 		   });
     
   # Pack the attributes
-  foreach my $attr ($self->attributes) {
-
+  for (my $i = 0; $i < $self->attr_slots; ++$i)
+  {
+      my $attr = $self->attr_slot_name($i);
       if (! defined $self->{Dict}->attr_num($attr))
       {
-	  carp("Unknown RADIUS tuple $attr\n")
+	  carp("Unknown RADIUS tuple $attr => " . $self->attr_slot_val($i) 
+	       . "\n")
 	      if ($self->{unknown_entries});
 	  next;
       }
@@ -340,7 +395,7 @@ sub pack {
       next unless ref($packer{$self->{Dict}->attr_type($attr)}) eq 'CODE';
 
       my $val = &{$packer{$self->{Dict}->attr_type($attr)}}
-      ($self->attr($attr), $self->{Dict} ->attr_num($attr));
+      ($self->attr_slot_val($i), $self->{Dict} ->attr_num($attr));
 
       $attstr .= pack $p_attr, $self->{Dict}->attr_num($attr),
       length($val)+2, $val;
@@ -493,78 +548,94 @@ sub unpack {
 	});
   
   # Unpack the attributes
-  while (length($attrdat)) {
-    my $length = unpack "x C", $attrdat;
-    my ($type, $value) = unpack "C x a${\($length-2)}", $attrdat;
-    if ($type == $VSA) {    # Vendor-Specific Attribute
-      my ($vid, $vtype, $vlength) = unpack "N C C", $value;
+  while (length($attrdat)) 
+  {
+      my $length = unpack "x C", $attrdat;
+      my ($type, $value) = unpack "C x a${\($length-2)}", $attrdat;
+      if ($type == $VSA) {    # Vendor-Specific Attribute
+	  my ($vid) = unpack "N", $value;
+	  substr ($value, 0, 4) = "";
+	  
+	  while (length($value))
+	  {
+	      my ($vtype, $vlength) = unpack "C C", $value;
+	      
+	      # XXX - How do we calculate the length
+	      # of the VSA? It's not defined!
+	      
+	      # XXX - 3COM seems to do things a bit differently. 
+	      # The IF below takes care of that. This was contributed by 
+	      # Ian Smith. Check the file CHANGES on this distribution for 
+	      # more information.
 
-      # XXX - How do we calculate the length
-      # of the VSA? It's not defined!
+	      my $vvalue;
+	      if ($vid == 429)
+	      {
+		  ($vtype) = unpack "N", $value;
+		  $vvalue = unpack "xxxx a${\($length-10)}", $value;
+	      }
+	      else
+	      {
+		  $vvalue = unpack "x x a${\($vlength-2)}", $value;
+	      }
 
-      # XXX - 3COM seems to do things a bit differently. 
-      # The IF below takes care of that. This was contributed by 
-      # Ian Smith. Check the file CHANGES on this distribution for 
-      # more information.
-
-      my $vvalue;
-      if ($vid == 429) {
-        ($vid, $vtype) = unpack "N N", $value;
-        $vvalue = unpack "xxxx xxxx a${\($length-10)}", $value;
-      } else {
-        $vvalue = unpack "xxxx x x a${\($vlength-2)}", $value;
+	      if ((not defined $dict->vsattr_numtype($vid, $vtype)) or 
+		  (ref $vsaunpacker{$dict->vsattr_numtype($vid, $vtype)} 
+		   ne 'CODE')) 
+	      {
+		  my $whicherr 
+		      = (defined $dict->vsattr_numtype($vid, $vtype)) ?
+		      "Garbled":"Unknown";
+		  warn "$whicherr vendor attribute $vid/$vtype for unpack()\n"
+		      unless $unkvprinted{"$vid/$vtype"};
+		  $unkvprinted{"$vid/$vtype"} = 1;
+		  substr($attrdat, 0, $length) = ""; # Skip this section
+		  next;
+	      }
+	      my ($val, $tag) = 
+		  &{$vsaunpacker{$dict->vsattr_numtype($vid, $vtype)}}($vvalue,
+								       $vtype,
+								       $vid);
+	      if ( defined $tag ) 
+	      {
+		  $val = "-emtpy-" unless defined $val;
+		  $self->set_taggedvsattr($vid,
+					  $dict->vsattr_name($vid, $vtype),
+					  $val, 
+					  $tag);
+	      }
+	      else 
+	      {
+		  $self->set_vsattr($vid, $dict->vsattr_name($vid, $vtype), 
+				    $val);
+	      }
+	      substr($value, 0, $vlength) = "";
+	  }
       }
-
-      if ((not defined $dict->vsattr_numtype($vid, $vtype)) or 
-          (ref $vsaunpacker{$dict->vsattr_numtype($vid, $vtype)} ne 'CODE')) 
-      {
-	  my $whicherr = (defined $dict->vsattr_numtype($vid, $vtype)) ?
-	      "Garbled":"Unknown";
-	  warn "$whicherr vendor attribute $vid/$vtype for unpack()\n"
-	      unless $unkvprinted{"$vid/$vtype"};
-	  $unkvprinted{"$vid/$vtype"} = 1;
-	  substr($attrdat, 0, $length) = ""; # Skip this section
-	  next;
+      else 
+      {            # Normal attribute
+	  if ((not defined $dict->attr_numtype($type)) or
+	      (ref ($unpacker{$dict->attr_numtype($type)}) ne 'CODE')) 
+	  {
+	      my $whicherr = (defined $dict->attr_numtype($type)) ?
+		  "Garbled":"Unknown";
+	      warn "$whicherr general attribute $type for unpack()\n"
+		  unless $unkgprinted{$type};
+	      $unkgprinted{$type} = 1;
+	      substr($attrdat, 0, $length) = ""; # Skip this section
+	      next;
+	  }
+	  my ($val,$tag) = &{$unpacker{$dict->attr_numtype($type)}}($value, 
+								    $type);
+	  if ( defined $tag ) {
+	      if ( ! defined $val ) { $val = "-emtpy-" };
+	      $self->set_taggedattr($dict->attr_name($type), $val , $tag);
+	  }
+	  else {
+	      $self->set_attr($dict->attr_name($type), $val);
+	  }
       }
-      my ($val, $tag) = 
-          &{$vsaunpacker{$dict->vsattr_numtype($vid, $vtype)}}($vvalue, 
-							       $vtype,
-							       $vid);
-      if ( defined $tag ) {
-          if ( ! defined $val ) { $val = "-emtpy-" };
-          $self->set_taggedvsattr($vid,
-				  $dict->vsattr_name($vid, $vtype),
-				  $val, 
-				  $tag);
-      }
-      else {
-          $self->set_vsattr($vid, $dict->vsattr_name($vid, $vtype), $val);
-      }
-    } 
-    else 
-    {            # Normal attribute
-	if ((not defined $dict->attr_numtype($type)) or
-	    (ref ($unpacker{$dict->attr_numtype($type)}) ne 'CODE')) 
-	{
-	    my $whicherr = (defined $dict->attr_numtype($type)) ?
-		"Garbled":"Unknown";
-	    warn "$whicherr general attribute $type for unpack()\n"
-		unless $unkgprinted{$type};
-	    $unkgprinted{$type} = 1;
-	    substr($attrdat, 0, $length) = ""; # Skip this section
-	    next;
-	}
-	my ($val,$tag) = &{$unpacker{$dict->attr_numtype($type)}}($value, 
-								  $type);
-	if ( defined $tag ) {
-	    if ( ! defined $val ) { $val = "-emtpy-" };
-	    $self->set_taggedattr($dict->attr_name($type), $val , $tag);
-	}
-	else {
-	    $self->set_attr($dict->attr_name($type), $val);
-	}
-    }
-    substr($attrdat, 0, $length) = ""; # Skip this section
+      substr($attrdat, 0, $length) = ""; # Skip this section
   }
 }
 
@@ -654,16 +725,18 @@ From RFC-2865:
 
 =head2 Proxy-State, Implementation
 
-Proxy-State attributes are stored in an array, and when copied from
-one Net::Radius::PacketOrdered to another - using method
-C<-E<gt>new()> with packet data as attribute - they retain their
-order.
+C<-E<gt>pack()> and C<-E<gt>dump()> now work properly with multiple
+atributes, in particular the Proxy-State attribute - This means that
+the packet will be encoded with the multiple attributes present. This
+change makes Net::Radius::PacketOrdered likely redundant.
 
 C<-E<gt>attr()> method always return the last attribute inserted.
 
-C<-E<gt>set_attr()> method pushes the attribute onto the Attributes
-stack, or overwrites it in specific circumnstances, as described in
-method documentation.
+C<-E<gt>set_attr()> and C<-E<gt>set_vsattr()> methods push either the
+attribute or the vendor-specific attribute, onto the Attributes stack,
+or overwrites it in specific circumnstances, as described in method
+documentation. The C<-E<gt>unset_attr()> and C<-E<gt>unset_vsattr()>
+perform the opposite function.
 
 =head2 OBJECT METHODS
 
@@ -763,7 +836,7 @@ Treated as a string
 When multiple attributes are inserted in the packet, the last one is
 returned.
 
-=item B<-E<gt>I<set_attr>($name, $val, $rewrite_flag)>
+=item B<-E<gt>set_attr($name, $val, $rewrite_flag)>
 
 Sets the named Attributes to the given value. Values should be
 supplied as they would be returned from the B<attr> method. If
@@ -774,15 +847,38 @@ attributes with such name already on the stack, there are no
 attributes with such name, rewrite_flag is omitted) name/pair array
 will be pushed onto the stack.
 
+=item B<-E<gt>set_vsattr($vendor, $name, $val, $rewrite_flag)>
+
+Analogous to C<-E<gt>set_attr()>, but operates on vendor-specific
+attributes for vendor C<$vendor>.
+
 =item B<-E<gt>unset_attr($name)>
 
 Sets the named Attribute to the given value.  Values should be supplied
 as they would be returned from the B<attr> method.
 
-=item B<-E<gt>I<attr_slot>($integer)>
+=item B<-E<gt>unset_vsattr($vendor, $name)>
+
+Analogous to C<-E<gt>unset_attr()>, but operates on vendor-specific
+attributes for vendor C<$vendor>.
+
+=item B<-E<gt>attr_slot($integer)>
+
+Deprecated synonym for C<-E<gt>attr_slot_val()>.
+
+=item B<-E<gt>attr_slots()>
+
+Return the number of attribute slots in the packet.
+
+=item B<-E<gt>attr_slot_name($integer)>
+
+Retrieves the attribute name of the given slot number from the
+Attributes stack. Returns undef when the slot is vacant.
+
+=item B<-E<gt>attr_slot_val($integer)>
 
 Retrieves the attribute value of the given slot number from the
-Attributes stack.
+Attributes stack. Returns undef when the slot is vacant.
 
 =item B<-E<gt>I<unset_attr_slot>($integer)>
 

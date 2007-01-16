@@ -2,7 +2,7 @@
 
 # Test the parsing of the bundled dictionary files...
 
-# $Id: bundled.t,v 1.3 2006/11/14 17:44:59 lem Exp $
+# $Id: bundled.t,v 1.5 2007/01/14 18:53:22 lem Exp $
 
 use Test::Warn;
 use Test::More;
@@ -10,14 +10,15 @@ use Net::Radius::Dictionary;
 
 my %dict = 
     (
-     'dicts/dictionary.orig' => { attr => 39, vendor => undef, vsa => 0 },
+     'dicts/dictionary.base' => { attr => 39, vendor => undef, vsa => 0 },
      'dicts/dictionary.3com-o' => { attr => 3, vendor => 'USR', vsa => 259 },
      'dicts/dictionary' 	=> { attr => 78, vendor => undef, vsa => 0 },
      'dicts/dictionary.3com' 	=> { attr => 0, vendor => '3com', vsa => 1 },
      'dicts/dictionary.3gpp2' 	=> { attr => 0, vendor => '3GPP2', vsa => 74 },
      'dicts/dictionary.3gpp' 	=> { attr => 0, vendor => '3GPP', vsa => 17 },
      'dicts/dictionary.acc' 	=> { attr => 0, vendor => 'Acc', vsa => 47 },
-  'dicts/dictionary.alcatel' => { attr => 0, vendor => 'Alcatel', vsa => 21 },
+     'dicts/dictionary.alcatel' => 
+     { attr => 0, vendor => 'Alcatel', vsa => 21 },
      'dicts/dictionary.alteon'  => { attr => 0, vendor => 'Alteon', vsa => 1 },
      'dicts/dictionary.altiga'  => { attr => 0, vendor => 'Altiga', vsa => 29},
      'dicts/dictionary.aptis'	=> { attr => 0, vendor => 'Aptis', vsa => 36 },
@@ -25,6 +26,8 @@ my %dict =
      'dicts/dictionary.bay'	=> {attr=>0,vendor=>'Bay-Networks',vsa => 65 },
      'dicts/dictionary.bintec'	=> { attr => 0, vendor => 'BinTec', vsa => 17},
      'dicts/dictionary.bristol'	=> { attr => 0, vendor => 'Bristol', vsa => 5},
+     'dicts/dictionary.broadsoft' => 
+     {attr => 0, vendor => 'BroadSoft', vsa => 132 },
      'dicts/dictionary.cablelabs' => 
      { attr => 0, vendor => 'CableLabs', vsa => 62 },
      'dicts/dictionary.cabletron' => 
