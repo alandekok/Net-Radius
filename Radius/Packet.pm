@@ -7,7 +7,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @EXPORT    = qw(auth_resp auth_acct_verify auth_req_verify);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.51';
+$VERSION = '1.53';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
@@ -589,7 +589,7 @@ sub unpack {
 		  warn "$whicherr vendor attribute $vid/$vtype for unpack()\n"
 		      unless $unkvprinted{"$vid/$vtype"};
 		  $unkvprinted{"$vid/$vtype"} = 1;
-		  substr($attrdat, 0, $length) = ""; # Skip this section
+		  substr($value, 0, $vlength) = ""; # Skip this section
 		  next;
 	      }
 	      my ($val, $tag) = 

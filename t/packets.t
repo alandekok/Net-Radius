@@ -3,7 +3,7 @@
 # Process each binary packet in the distribution, performing generic tests
 # on it
 
-# $Id: packets.t,v 1.2 2007/01/09 20:02:38 lem Exp $
+# $Id: packets.t,v 1.3 2007/01/30 10:22:35 lem Exp $
 
 no utf8;
 use strict;
@@ -12,6 +12,7 @@ use warnings;
 use IO::File;
 use File::Find;
 use Test::More;
+use Test::Warn;
 
 use Net::Radius::Packet;
 use Net::Radius::Dictionary;
@@ -31,7 +32,7 @@ find ({ untaint => 1, follow => 1, no_chdir => 1,
     }, qw!packets!);
 
 # Provide a test plan based in how many test inputs where found
-plan tests => @inputs * 12;
+plan tests => @inputs * 13;
 
 # Perform the tests for each test input
 for my $i (@inputs)
@@ -90,7 +91,10 @@ for my $i (@inputs)
 
       isa_ok($d, 'Net::Radius::Dictionary');
 
-      my $p = new Net::Radius::Packet $d, $VAR1->{packet};
+      my $p;
+      warnings_are(sub { $p = new Net::Radius::Packet $d, $VAR1->{packet} },
+		   [], "No warnings on packet decode");
+      
       isa_ok($p, 'Net::Radius::Packet');
 
       if (exists($VAR1->{slots}))

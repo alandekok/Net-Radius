@@ -1,5 +1,15 @@
 Revision history for Perl extension RADIUS.
 
+1.53	Tue Jan 30 06:25:33 VET 2007
+	* Packets with VSAs that couldn't be decoded caused an endless
+	  loop. This has now been fixed by skipping over the b0rked
+	  attribute, thus parsing as much of the packet as possible. A
+	  warn() is issued
+	* The packet tests now fail if the decode causes a warn() -
+	  This may be helpful in the future for catching subtle
+	  errors, specially in the decoding of packets
+	* Added a new test packet for Cisco VPN 3000 - Thanks Luis
+
 1.52    Mon Jan  8 15:47:38 VET 2007
 	* Added patch by Freman (consistend ->set_vsattr and
 	  ->unset_vsattr) - Thanks Freman
