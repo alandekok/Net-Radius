@@ -7,7 +7,7 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $VSA);
 @EXPORT    = qw(auth_resp auth_acct_verify auth_req_verify);
 @EXPORT_OK = qw( );
 
-$VERSION = '1.53';
+$VERSION = '1.55';
 
 $VSA = 26;			# Type assigned in RFC2138 to the 
 				# Vendor-Specific Attributes
@@ -142,7 +142,8 @@ sub unset_attr
     my @attr = $self->_attributes;
 
     for (my $i = 0; $i <= $#attr; $i++ ) {
-        if ( $name eq $attr[$i][0] && $value eq pclean(pdef($attr[$i][1]))) {
+        if ( $name eq $attr[$i][0] && $value eq $attr[$i][1])
+	{
             $found = 1;
 	    if ( $#attr == 0 ) {
 		# no more attributes left on the stack
@@ -355,10 +356,11 @@ sub pack {
 		   "date" => sub { return $_[0]; },
 		   "ifid" => sub { return $_[0]; },
 		   "integer" => sub {
+		       my $vid = $self->{Dict}->vendor_num($_[2]) || $_[2];
 		       return pack "N", 
-		       (defined $self->{Dict}->vsattr_has_val($_[2], $_[1])
-			&& defined $self->{Dict}->vsaval_num(@_[2, 1, 0]) 
-			) ?  $self->{Dict}->vsaval_num(@_[2, 1, 0]) : $_[0];
+		       (defined $self->{Dict}->vsattr_has_val($vid, $_[1])
+			&& defined $self->{Dict}->vsaval_num($vid, @_[1, 0]) 
+			) ?  $self->{Dict}->vsaval_num($vid, @_[1, 0]) : $_[0];
 		   },
 		   "ipaddr" => sub {
 		       return inet_aton($_[0]);
@@ -403,29 +405,32 @@ sub pack {
 
   # Pack the Vendor-Specific Attributes
 
-  foreach my $vendor ($self->vendors) {
-    foreach my $attr ($self->vsattributes($vendor)) {
-      next unless ref($vsapacker{$self->{Dict}->vsattr_type($vendor, $attr)}) 
+  foreach my $vendor ($self->vendors) 
+  {
+      my $vid = $self->{Dict}->vendor_num($vendor);
+      foreach my $attr ($self->vsattributes($vendor)) {
+	next unless ref($vsapacker{$self->{Dict}
+				   ->vsattr_type($vid, $attr)}) 
             eq 'CODE';
       foreach my $datum (@{$self->vsattr($vendor, $attr)}) {
-        my $vval = &{$vsapacker{$self->{'Dict'}->vsattr_type($vendor, $attr)}}
-        ($datum, $self->{'Dict'}->vsattr_num($vendor, $attr), $vendor);
+        my $vval = &{$vsapacker{$self->{'Dict'}->vsattr_type($vid, $attr)}}
+        ($datum, $self->{'Dict'}->vsattr_num($vid, $attr), $vendor);
         
-        if ($vendor == 429) {
+        if ($vid == 429) {
 
       		# As pointed out by Quan Choi,
       		# we need special code to handle the
       		# 3Com case - See RFC-2882, sec 2.3.1
 
 	    $attstr .= pack $p_vsa_3com, 26, 
-	    length($vval) + 10, $vendor,
-	    $self->{'Dict'}->vsattr_num($vendor, $attr),
+	    length($vval) + 10, $vid,
+	    $self->{'Dict'}->vsattr_num($vid, $attr),
 	    $vval;
         } 
 	else 
 	{
-	    $attstr .= pack $p_vsa, 26, length($vval) + 8, $vendor,
-	    $self->{'Dict'}->vsattr_num($vendor, $attr),
+	    $attstr .= pack $p_vsa, 26, length($vval) + 8, $vid,
+	    $self->{'Dict'}->vsattr_num($vid, $attr),
 	    length($vval) + 2, $vval;
         }
       }

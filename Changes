@@ -1,5 +1,30 @@
 Revision history for Perl extension RADIUS.
 
+1.55	Thu Apr 26 16:21:46 VET 2007
+	* Darrian Hale reported that $p->unset_attr('Attribute',
+	  $packet->attr('Attribute')) was b0rken due to the attribute
+	  lookup using the "escaped" value instead of the raw value
+	  returned by ->attr. Escaping was removed and a test was
+	  added
+
+	* Versions bumped to 1.55 as prior fixes were confirmed to
+          work - Release to CPAN
+
+	Sun Apr 22 16:54:03 VET 2007
+	* Fixed the VSA packer to accept a vendor-id and a vendor
+	  name. This will help if similar bugs are still lurking
+	  around. This was pointed to by Pedro as well
+
+	Sat Apr 21 14:04:35 VET 2007
+	* Fixed VSA packing bug pointed out by Pedro Cavaca. Parts of
+	  Packet.pm expected to receive a numeric vendor id, others
+	  expected the string name
+
+
+1.54	Tue Jan 30 11:13:42 VET 2007
+	* Added missing packet file to MANIFEST
+	* Fixed an innocuous warn() during make test
+
 1.53	Tue Jan 30 06:25:33 VET 2007
 	* Packets with VSAs that couldn't be decoded caused an endless
 	  loop. This has now been fixed by skipping over the b0rked

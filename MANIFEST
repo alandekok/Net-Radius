@@ -92,6 +92,7 @@ packets/cisco-acs-ar-02.p
 packets/cisco-acs-ar-03.p
 packets/cisco-ios-12.2.18-01.p
 packets/cisco-ios-12.2.18-02.p
+packets/cisco-vpn3k-ar.p
 packets/rsa-aa-01.p
 packets/rsa-aa-02.p
 packets/rsa-ac-01.p
@@ -101,6 +102,7 @@ t/00-pod.t
 t/attrdict.t
 t/attrover.t
 t/attrslot.t
+t/attrunset.t
 t/auth.t
 t/basedict.t
 t/bundled.t
@@ -108,4 +110,5 @@ t/dictover.t
 t/dump.t
 t/packdict.t
 t/packets.t
+t/vsa.t
 version.pl

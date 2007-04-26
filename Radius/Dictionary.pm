@@ -4,9 +4,9 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
-# $Id: Dictionary.pm,v 1.9 2007/01/30 10:28:45 lem Exp $
+# $Id: Dictionary.pm,v 1.11 2007/04/26 20:20:02 lem Exp $
 
-$VERSION = '1.53';
+$VERSION = '1.55';
 
 sub new {
   my $class = shift;

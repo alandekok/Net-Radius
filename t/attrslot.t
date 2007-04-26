@@ -2,7 +2,7 @@
 
 # Test the attribute slot management
 
-# $Id: attrslot.t,v 1.1 2007/01/08 20:51:56 lem Exp $
+# $Id: attrslot.t,v 1.2 2007/01/30 15:15:48 lem Exp $
 
 
 no utf8;
@@ -57,7 +57,7 @@ is($p->attr_slot_val(1), 'line-2', "Correct value for slot 1");
 is($p->attr_slot_name(2), undef, "Undefined slot 2 name");
 is($p->attr_slot_val(2), undef, "Undefined slot 2 value");
 
-my $q = new Net::Radius::Packet $d, $p->pack;
+$q = new Net::Radius::Packet $d, $p->pack;
 isa_ok($q, 'Net::Radius::Packet');
 
 is($q->attr_slot_name(0), 'Reply-Message', "Correct name for slot 0 (q)");
