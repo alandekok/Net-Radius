@@ -112,3 +112,4 @@ t/packdict.t
 t/packets.t
 t/vsa.t
 version.pl
+META.yml                                 Module meta-data (added by MakeMaker)

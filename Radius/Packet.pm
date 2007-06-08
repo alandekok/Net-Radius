@@ -407,7 +407,7 @@ sub pack {
 
   foreach my $vendor ($self->vendors) 
   {
-      my $vid = $self->{Dict}->vendor_num($vendor);
+      my $vid = $self->{Dict}->vendor_num($vendor) || $vendor;
       foreach my $attr ($self->vsattributes($vendor)) {
 	next unless ref($vsapacker{$self->{Dict}
 				   ->vsattr_type($vid, $attr)}) 

@@ -1,5 +1,14 @@
 Revision history for Perl extension RADIUS.
 
+1.56	Fri Jun  8 09:55:35 VET 2007
+
+	* Yaroslav Bogomolov reported a problem when packing VSAs with
+	  dictionaries with no VENDOR definitions (numeric VIDs). his
+	  was fixed while preserving the intended behavior of having
+	  ->vendor_num return undef on this case. Thanks Yaroslav!
+	  Added a reg test for this.
+
+
 1.55	Thu Apr 26 16:21:46 VET 2007
 	* Darrian Hale reported that $p->unset_attr('Attribute',
 	  $packet->attr('Attribute')) was b0rken due to the attribute
