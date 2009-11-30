@@ -2,7 +2,7 @@
 
 # Test the parsing of individual attributes
 
-# $Id: attrdict.t,v 1.2 2006/08/09 16:00:01 lem Exp $
+# $Id: attrdict.t 27 2006-08-09 16:00:01Z lem $
 
 use IO::File;
 use Test::More;

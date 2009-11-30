@@ -3,10 +3,12 @@
 ^_build/
 ^blib/
 ^blibdirs
+^debian/
 Makefile$
 Makefile\.[a-z]+$
 pm_to_blib
 CVS/.*
+\.svn
 \.cvs
 ,v$
 ^tmp/

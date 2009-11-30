@@ -2,7 +2,7 @@
 
 # Test attribute unsetting attributes with ASCII and non-ASCII (8-bit) values
 
-# $Id: attrunset.t,v 1.1 2007/04/26 20:25:21 lem Exp $
+# $Id: attrunset.t 81 2007-04-26 20:25:21Z lem $
 
 
 use IO::File;

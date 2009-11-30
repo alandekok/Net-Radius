@@ -1,7 +1,7 @@
 #
 #	Sonicwall Firewall dictionary
 #
-#	$Id: dictionary.sonicwall,v 1.1 2006/11/14 17:44:59 lem Exp $
+#	$Id: dictionary.sonicwall 45 2006-11-14 17:45:00Z lem $
 #
 
 VENDOR	SonicWall	8741

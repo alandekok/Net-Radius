@@ -12,7 +12,7 @@ use Fcntl;
 # to Access-Request packets with Access-Accept.  This allows anyone
 # to log in.
 
-# $Id: example-yes.pl,v 1.2 2003/01/08 03:42:41 lem Exp $
+# $Id: example-yes.pl 7 2003-01-08 03:42:41Z lem $
 
 my $secret = "mysecret";  # Shared secret on the term server
 

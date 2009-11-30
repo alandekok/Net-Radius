@@ -2,7 +2,7 @@
 
 # Test packet dumping
 
-# $Id: dump.t,v 1.1 2006/11/14 01:45:17 lem Exp $
+# $Id: dump.t 38 2006-11-14 01:46:05Z lem $
 
 
 no utf8;

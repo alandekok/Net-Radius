@@ -2,7 +2,7 @@
 
 # Test packet auth code
 
-# $Id: auth.t,v 1.1 2006/11/14 20:05:11 lem Exp $
+# $Id: auth.t 48 2006-11-14 20:05:11Z lem $
 
 
 no utf8;

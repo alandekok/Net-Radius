@@ -1,6 +1,6 @@
 #
 # Ascend dictionary.
-# $Id: dictionary.ascend,v 1.1 2006/11/14 17:45:00 lem Exp $
+# $Id: dictionary.ascend 45 2006-11-14 17:45:00Z lem $
 #
 #		Enable by putting the line "$INCLUDE dictionary.ascend" into
 #		the main dictionary file.

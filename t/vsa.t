@@ -2,7 +2,7 @@
 
 # Test VSA packing and unpacking
 
-# $Id: vsa.t,v 1.2 2007/06/08 13:55:15 lem Exp $
+# $Id: vsa.t 83 2007-06-08 13:57:58Z lem $
 
 
 use IO::File;

@@ -242,7 +242,11 @@ sub set_password {
 # Set response authenticator in binary packet
 sub auth_resp {
   my $new = $_[0];
-  substr($new, 4, 16) = Digest::MD5::md5($_[0] . $_[1]);
+  if ($_[2])
+  {  substr($new, 4, 16) = Digest::MD5::md5(substr($_[0], 0, 4) . 
+					    "\x0" x 16 . substr($_[0], 20) . 
+					    $_[1]); }
+  else { substr($new, 4, 16) = Digest::MD5::md5($_[0] . $_[1]); }
   return $new;
 }
 
@@ -783,10 +787,41 @@ or server.
 Returns the Code field as a string.  As of this writing, the following
 codes are defined:
 
-        Access-Request          Access-Accept
-        Access-Reject           Accounting-Request
-        Accounting-Response     Access-Challenge
-        Status-Server           Status-Client
+    Access-Request
+    Access-Accept
+    Access-Reject
+    Accounting-Request
+    Accounting-Response
+    Accounting-Status
+    Interim-Accounting
+    Password-Request
+    Password-Ack
+    Password-Reject
+    Accounting-Message
+    Access-Challenge
+    Status-Server
+    Status-Client
+    Resource-Free-Request
+    Resource-Free-Response
+    Resource-Query-Request
+    Resource-Query-Response
+    Alternate-Resource-Reclaim-Request
+    NAS-Reboot-Request
+    NAS-Reboot-Response
+    Next-Passcode
+    New-Pin
+    Terminate-Session
+    Password-Expired
+    Event-Request
+    Event-Response
+    Disconnect-Request
+    Disconnect-ACK
+    Disconnect-NAK
+    CoA-Request
+    CoA-ACK
+    CoA-NAK
+    IP-Address-Allocate
+    IP-Address-Release
 
 =item B<-E<gt>set_code($code)>
 
@@ -921,11 +956,15 @@ Controls the generation of a C<warn()> whenever an unknown tuple is seen.
 
 =over 4
 
-=item B<auth_resp($packed_packet, $secret)>
+=item B<auth_resp($packed_packet, $secret [, accounting])>
 
 Given a (packed) RADIUS packet and a shared secret, returns a new
 packet with the Authenticator field changed in accordace with RADIUS
 protocol requirements.
+
+If the third optional parameter is true, the Authenticator is encoded
+for an accounting packet, using 16 0x0 octets as the placeholder for
+the authenticator.
 
 =item B<auth_acct_verify($packet, $secret)>
 

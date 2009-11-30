@@ -1,7 +1,7 @@
 #
 #	Allegedly for ProFTPd.
 #
-#	$Id: dictionary.unix,v 1.1 2006/11/14 17:44:59 lem Exp $
+#	$Id: dictionary.unix 45 2006-11-14 17:45:00Z lem $
 #
 
 VENDOR		Unix	4

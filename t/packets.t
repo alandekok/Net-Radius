@@ -3,7 +3,7 @@
 # Process each binary packet in the distribution, performing generic tests
 # on it
 
-# $Id: packets.t,v 1.3 2007/01/30 10:22:35 lem Exp $
+# $Id: packets.t 73 2007-01-30 10:22:35Z lem $
 
 no utf8;
 use strict;

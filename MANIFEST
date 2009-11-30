@@ -1,16 +1,7 @@
+build-stamp
 Changes
-MANIFEST			This list of files
-MANIFEST.SKIP
-Makefile.PL
-README
-README.3COM
-README.VSA
-README.broken
-README.packets
-README.server
-Radius/Dictionary.pm
-Radius/Packet.pm
 contrib/bin2packet
+contrib/rad-dump
 dicts/dictionary
 dicts/dictionary.3com
 dicts/dictionary.3com-o
@@ -44,6 +35,7 @@ dicts/dictionary.freeradius
 dicts/dictionary.gandalf
 dicts/dictionary.garderos
 dicts/dictionary.gemtek
+dicts/dictionary.huawei
 dicts/dictionary.itk
 dicts/dictionary.juniper
 dicts/dictionary.karlnet
@@ -77,15 +69,20 @@ dicts/dictionary.wispr
 dicts/dictionary.xedia
 docs/rfc2865.txt
 docs/rfc2866.txt
+docs/rfc2869.txt
 docs/rfc2882.txt
 docs/rfc3575.txt
+docs/rfc3576.txt
 examples/example-client.pl
 examples/example-menu.pl
 examples/example-unix.pl
 examples/example-yes.pl
 examples/radius2ldap.pl
 examples/tutorial.pl
-packets/README
+install-stamp
+Makefile.PL
+MANIFEST			This list of files
+MANIFEST.SKIP
 packets/broadsoft-areq-00.p
 packets/cisco-acs-ar-01.p
 packets/cisco-acs-ar-02.p
@@ -93,10 +90,23 @@ packets/cisco-acs-ar-03.p
 packets/cisco-ios-12.2.18-01.p
 packets/cisco-ios-12.2.18-02.p
 packets/cisco-vpn3k-ar.p
+packets/huawei-me60-accreq-01.p
+packets/huawei-me60-acctreq-01.p
+packets/huawei-me60-acctreq-02.p
+packets/README
 packets/rsa-aa-01.p
 packets/rsa-aa-02.p
 packets/rsa-ac-01.p
 packets/rsa-ar-01.p
+Radius/Dictionary.pm
+Radius/Packet.pm
+README
+README.3COM
+README.broken
+README.debian
+README.packets
+README.server
+README.VSA
 t/00-load.t
 t/00-pod.t
 t/attrdict.t
@@ -111,5 +121,4 @@ t/dump.t
 t/packdict.t
 t/packets.t
 t/vsa.t
-version.pl
 META.yml                                 Module meta-data (added by MakeMaker)

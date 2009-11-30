@@ -14,7 +14,7 @@ use Fcntl;
 # This is a simple test program to originate RADIUS authentication
 # and accounting requests for testing a RADIUS server.
 
-# $Id: example-client.pl,v 1.2 2003/01/08 03:42:41 lem Exp $
+# $Id: example-client.pl 7 2003-01-08 03:42:41Z lem $
 
 # test user details
 my $user = "testuser";

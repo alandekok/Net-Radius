@@ -49,18 +49,15 @@ please consider the following:
   on the packets, such as the RADIUS secret, user names or passwords,
   IP addresses, etc.
 
-* At least during the early stages of the packet test implementation,
-  all submitted samples will be added to the packet tests.
-
 HOW TO PRODUCE A PACKET DUMP
 
 Packet dumps can be produced with any tool whose output is supported
-by ethereal, which is then used to extract the packet payload and
-build the corresponding test. My recommendation is to use the tcpdump
-utility, available in many operating systems. There are other
-compatible utilities that can store captured packets as raw binary
-files, which can be compressed and sent via email or attached to a bug
-report.
+by wireshark (formerly, ethereal), which is then used to extract the
+packet payload and build the corresponding test. My recommendation is
+to use the tcpdump utility, available in many operating systems. There
+are other compatible utilities that can store captured packets as raw
+binary files, which can be compressed and sent via email or attached
+to a bug report.
 
 By way of example, let's say that the RADIUS server is located at IP
 address 10.0.0.1, serving requests in the UDP ports 1812 and 1813 for

@@ -2,7 +2,7 @@
 
 # Test the parsing of individual attributes
 
-# $Id: packdict.t,v 1.2 2006/11/14 01:42:55 lem Exp $
+# $Id: packdict.t 37 2006-11-14 01:42:55Z lem $
 
 use IO::File;
 use Test::More tests => 30;

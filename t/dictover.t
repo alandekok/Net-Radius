@@ -2,7 +2,7 @@
 
 # Test the overriding of specific entries
 
-# $Id: dictover.t,v 1.2 2006/08/09 16:00:01 lem Exp $
+# $Id: dictover.t 27 2006-08-09 16:00:01Z lem $
 
 use IO::File;
 use Test::More;

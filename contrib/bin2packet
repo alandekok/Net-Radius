@@ -4,7 +4,7 @@ no utf8;
 use strict;
 use warnings;
 
-our $VERSION = do { sprintf "%d.%03d", (q$Revision: 1.2 $ =~ /\d+/g) };
+our $VERSION = do { sprintf "%0.03f", (q$Revision: 93 $ =~ /\d+/g) };
 
 use IO::File;
 use IO::Prompt;
@@ -174,7 +174,7 @@ die "Failed to create output file $output: $!\n"
 
 die "Failed storing contents of file $output: $!\n"
     unless print $fh "#!/usr/bin/perl\n\n" .
-    "no utf8;\n\n# Net::Radius test input\n" . '# Made with $Id: bin2packet,v 1.2 2007/01/14 18:51:42 lem Exp $' 
+    "no utf8;\n\n# Net::Radius test input\n" . '# Made with $Id: bin2packet 93 2009-09-23 14:38:39Z lem $' 
     . "\n\n" . Data::Dumper->Dump([\%data]);
 
 die "Failed to close output file $output: $!\n"
@@ -193,7 +193,7 @@ bin2packet - Convert a RADIUS packet payload into a useable test point
 
     bin2packet --dictionary dictfile [--authenticator auth-string]
     [--code code] [--description packet-desc] [--dont-embed-dict]
-    [--dump] [--help] [--identifier id] [--noprompt] [--output]
+    [--dump] [--help] [--identifier id] [--noprompt] [--output file]
     [--secret secret] [--slots number] dump-file...
 
 =head1 DESCRIPTION
@@ -268,7 +268,7 @@ All the packet information items available in the command-line will be
 prompted if not specified. This option causes non-supplied options to
 remain undefined, which may prevent certain tests over the packet.
 
-=item B<--output>
+=item B<--output file>
 
 Name of the file where this test input will be stored. The B<.p>
 extension will be automatically added.
@@ -290,7 +290,7 @@ provide a correct value.
 
 =head1 HISTORY
 
-    $Log: bin2packet,v $
+    $Log$
     Revision 1.2  2007/01/14 18:51:42  lem
     When Dump()ing and eval()ing back the packet, IO::Prompt::ReturnVal
     may not be within reach of the test script (different machine,
@@ -310,7 +310,7 @@ same terms as Perl version 5.8.6 itself.
 
 =head1 AUTHOR
 
-Luis E. Muñoz E<lt>luismunoz@cpan.orgE<gt>
+Luis E. MuÃ±oz E<lt>luismunoz@cpan.orgE<gt>
 
 =head1 SEE ALSO
 

@@ -16,7 +16,7 @@ use Fcntl;
 
 # NOTE - This server must be run as root on systems with shadow passwords.
 
-# $Id: radius2ldap.pl,v 1.2 2003/01/08 03:42:41 lem Exp $
+# $Id: radius2ldap.pl 7 2003-01-08 03:42:41Z lem $
 
 my $testing = 0; # set non-zero if testing
 my %hostname_secret = ('rad1' => 'secret1', 'rad2' => '2secret',

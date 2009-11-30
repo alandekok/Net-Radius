@@ -2,7 +2,7 @@
 
 # Test the attribute slot management
 
-# $Id: attrslot.t,v 1.2 2007/01/30 15:15:48 lem Exp $
+# $Id: attrslot.t 77 2007-01-30 15:15:48Z lem $
 
 
 no utf8;

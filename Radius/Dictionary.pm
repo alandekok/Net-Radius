@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use vars qw($VERSION);
 
-# $Id: Dictionary.pm,v 1.11 2007/04/26 20:20:02 lem Exp $
+# $Id: Dictionary.pm 80 2007-04-26 20:20:02Z lem $
 
 $VERSION = '1.55';
 

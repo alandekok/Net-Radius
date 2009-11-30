@@ -1,5 +1,5 @@
 
-# $Id: 00-load.t,v 1.1 2003/10/16 20:10:24 lem Exp $
+# $Id: 00-load.t 9 2003-10-16 20:10:25Z lem $
 
 use Test::More tests => 2;
 use_ok("Net::Radius::Dictionary");

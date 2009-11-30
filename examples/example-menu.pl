@@ -16,7 +16,7 @@ use Fcntl;
 
 # NOTE - This server must be run as root on systems with shadow passwords.
 
-# $Id: example-menu.pl,v 1.2 2003/01/08 03:42:41 lem Exp $
+# $Id: example-menu.pl 7 2003-01-08 03:42:41Z lem $
 
 my $secret = "mysecret";  # Shared secret on the term server
 

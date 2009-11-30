@@ -3,7 +3,7 @@
 # Test the attribute overriding code as well as access to the
 # attribute stack
 
-# $Id: attrover.t,v 1.1 2007/01/08 20:51:56 lem Exp $
+# $Id: attrover.t 56 2007-01-08 20:52:18Z lem $
 
 
 no utf8;
